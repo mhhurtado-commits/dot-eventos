@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const presupuesto = parseFloat(document.getElementById('presupuesto').value) || 0;
     const notas = document.getElementById('notas').value.trim();
 
-    // Validación básica
     if (!nombre) {
       alert('Por favor ingresá el nombre del evento.');
       return;
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Por ahora guardamos en localStorage hasta conectar Supabase
     const eventos = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
 
     const nuevoEvento = {
@@ -37,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('dot-eventos', JSON.stringify(eventos));
 
     alert('¡Evento guardado!');
-    window.location.href = 'dashboard.html';
+    window.location.href = '/pages/dashboard';
   });
 
 });

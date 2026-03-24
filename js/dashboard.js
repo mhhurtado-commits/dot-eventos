@@ -7,17 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('user-avatar').textContent = iniciales;
 
   document.getElementById('btn-logout').addEventListener('click', () => {
-    window.location.href = '../index.html';
+    window.location.href = '/';
   });
 
   document.getElementById('btn-nuevo').addEventListener('click', () => {
-    window.location.href = 'nuevo-evento.html';
+    window.location.href = '/pages/nuevo-evento';
   });
 
-  // Cargar eventos desde localStorage
   const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
 
-  // Eventos de prueba si no hay ninguno guardado
   const eventosPrueba = [
     { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
     { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
@@ -73,7 +71,6 @@ function renderizarEventos(eventos) {
     borrador: 'Borrador'
   };
 
-  // Ordenar por fecha
   eventos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
   lista.innerHTML = eventos.map((evento, i) => {
@@ -87,7 +84,7 @@ function renderizarEventos(eventos) {
     const lugar = evento.lugar ? ' · ' + evento.lugar : '';
 
     return `
-      <div class="event-card" onclick="window.location.href='evento.html?id=${evento.id}'">
+      <div class="event-card" onclick="window.location.href='/pages/evento?id=${evento.id}'">
         <div class="event-dot" style="background:${color};"></div>
         <div class="event-info">
           <div class="event-name">${evento.nombre}</div>

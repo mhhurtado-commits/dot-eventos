@@ -116,9 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Botón editar
   document.getElementById('btn-editar').addEventListener('click', () => {
-    window.location.href = 'editar-evento.html?id=' + evento.id;
+    window.location.href = '/pages/editar-evento?id=' + evento.id;
   });
 
 });

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Editar evento · DOT Eventos</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/dashboard.css" />
-  <link rel="stylesheet" href="../css/nuevo-evento.css" />
+  <title>Nuevo evento · DOT Eventos</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/nuevo-evento.css" />
 </head>
 <body class="db-body-page">
 
@@ -24,7 +24,7 @@
       <span class="db-nav-name">DOT</span>
     </div>
     <div class="db-nav-right">
-      <button class="btn-logout" id="btn-volver">← Volver</button>
+      <button class="btn-logout" onclick="window.location.href='../dashboard'">← Volver</button>
     </div>
   </nav>
 
@@ -32,10 +32,9 @@
 
     <div class="db-header">
       <div>
-        <div class="db-title">Editar evento</div>
-        <div class="db-subtitle" id="subtitulo">Modificá los datos del evento</div>
+        <div class="db-title">Nuevo evento</div>
+        <div class="db-subtitle">Completá los datos del evento</div>
       </div>
-      <button class="btn-eliminar" id="btn-eliminar">Eliminar evento</button>
     </div>
 
     <div class="form-card">
@@ -79,14 +78,14 @@
       </div>
 
       <div class="form-actions">
-        <button class="btn-cancel" id="btn-cancelar">Cancelar</button>
-        <button class="btn-new" id="btn-guardar">Guardar cambios</button>
+        <button class="btn-cancel" onclick="window.location.href='../dashboard'">Cancelar</button>
+        <button class="btn-new" id="btn-guardar">Guardar evento</button>
       </div>
 
     </div>
 
   </div>
 
-  <script src="../js/editar-evento.js"></script>
+  <script src="../../js/nuevo-evento.js"></script>
 </body>
 </html>

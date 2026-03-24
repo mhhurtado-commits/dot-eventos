@@ -7,31 +7,27 @@ const eventosPrueba = [
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Obtener ID desde la URL
   const params = new URLSearchParams(window.location.search);
   const id = parseInt(params.get('id'));
 
-  // Buscar evento en localStorage primero, luego en prueba
   const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
   const todosLosEventos = [...eventosPrueba, ...eventosGuardados];
   const evento = todosLosEventos.find(e => e.id === id);
 
   if (!evento) {
     alert('Evento no encontrado.');
-    window.location.href = 'dashboard.html';
+    window.location.href = '/pages/dashboard';
     return;
   }
 
-  // Botón volver
   document.getElementById('btn-volver').addEventListener('click', () => {
-    window.location.href = 'evento.html?id=' + id;
+    window.location.href = '/pages/evento?id=' + id;
   });
 
   document.getElementById('btn-cancelar').addEventListener('click', () => {
-    window.location.href = 'evento.html?id=' + id;
+    window.location.href = '/pages/evento?id=' + id;
   });
 
-  // Cargar datos del evento en el formulario
   document.getElementById('subtitulo').textContent = evento.nombre;
   document.getElementById('nombre').value = evento.nombre;
   document.getElementById('fecha').value = evento.fecha;
@@ -40,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('presupuesto').value = evento.presupuesto || '';
   document.getElementById('notas').value = evento.notas || '';
 
-  // Guardar cambios
   document.getElementById('btn-guardar').addEventListener('click', () => {
 
     const nombre = document.getElementById('nombre').value.trim();
@@ -59,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Actualizar en localStorage
     const eventosLS = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
     const idx = eventosLS.findIndex(e => e.id === id);
 
@@ -69,10 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     alert('¡Cambios guardados!');
-    window.location.href = 'evento.html?id=' + id;
+    window.location.href = '/pages/evento?id=' + id;
   });
 
-  // Eliminar evento
   document.getElementById('btn-eliminar').addEventListener('click', () => {
     if (!confirm('¿Estás seguro que querés eliminar este evento?')) return;
 
@@ -81,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('dot-eventos', JSON.stringify(nuevosEventos));
 
     alert('Evento eliminado.');
-    window.location.href = 'dashboard.html';
+    window.location.href = '/pages/dashboard';
   });
 
 });
