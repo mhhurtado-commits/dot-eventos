@@ -24,7 +24,7 @@
       <span class="db-nav-name">DOT</span>
     </div>
     <div class="db-nav-right">
-      <button class="btn-logout" onclick="window.location.href='../dashboard'">← Volver</button>
+      <button class="btn-logout" onclick="window.location.href='/pages/dashboard'">← Volver</button>
       <button class="btn-new" id="btn-editar">Editar</button>
     </div>
   </nav>
@@ -111,8 +111,18 @@
     <div class="tab-content" id="tab-notas">
       <div class="section-header">
         <span class="db-section-title">Notas</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
+        <button class="btn-new btn-sm" id="btn-agregar-nota">+ Agregar</button>
       </div>
+
+      <div class="form-nota" id="form-nota" style="display:none;">
+        <input type="text" id="nota-titulo-input" class="form-input" placeholder="Título de la nota" />
+        <textarea id="nota-texto-input" class="form-input form-textarea" placeholder="Escribí tu nota acá..."></textarea>
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-nota">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-nota">Guardar nota</button>
+        </div>
+      </div>
+
       <div class="nota-list" id="nota-list">
         <div class="event-empty">No hay notas todavía.</div>
       </div>

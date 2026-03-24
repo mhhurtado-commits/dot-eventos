@@ -15,11 +15,6 @@ const movimientosPrueba = [
   { concepto: 'Anticipo cliente', monto: 100000, fecha: '2026-03-05', tipo: 'ingreso' }
 ];
 
-const notasPrueba = [
-  { titulo: 'Paleta de colores', texto: 'Blanco, verde sage y dorado. Evitar colores fuertes.' },
-  { titulo: 'Sitio de fotos', texto: 'https://drive.google.com/carpeta-garcia' }
-];
-
 const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
 const badges = {
   confirmado: 'badge-confirmado',
@@ -32,6 +27,8 @@ const etiquetas = {
   borrador: 'Borrador'
 };
 
+let eventoActual = null;
+
 document.addEventListener('DOMContentLoaded', () => {
 
   const params = new URLSearchParams(window.location.search);
@@ -41,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const todosLosEventos = [...eventos, ...eventosGuardados];
   const evento = todosLosEventos.find(e => e.id === id) || eventos[0];
   const idx = todosLosEventos.findIndex(e => e.id === evento.id);
+  eventoActual = evento;
 
   const color = colores[idx % colores.length];
   document.getElementById('evento-dot').style.background = color;
@@ -69,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('info-lugar').textContent = evento.lugar || '—';
   document.getElementById('info-estado').textContent = etiquetas[evento.estado] || 'Borrador';
 
+  // Reservas
   const reservaList = document.getElementById('reserva-list');
   if (reservasPrueba.length > 0) {
     reservaList.innerHTML = reservasPrueba.map(r => `
@@ -82,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  // Movimientos
   const movList = document.getElementById('movimiento-list');
   if (movimientosPrueba.length > 0) {
     movList.innerHTML = movimientosPrueba.map(m => `
@@ -97,16 +97,41 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  const notaList = document.getElementById('nota-list');
-  if (notasPrueba.length > 0) {
-    notaList.innerHTML = notasPrueba.map(n => `
-      <div class="nota-card">
-        <div class="nota-titulo">${n.titulo}</div>
-        <div class="nota-texto">${n.texto}</div>
-      </div>
-    `).join('');
-  }
+  // Notas
+  renderizarNotas();
 
+  // Botón agregar nota
+  document.getElementById('btn-agregar-nota').addEventListener('click', () => {
+    document.getElementById('form-nota').style.display = 'flex';
+  });
+
+  document.getElementById('btn-cancelar-nota').addEventListener('click', () => {
+    document.getElementById('form-nota').style.display = 'none';
+    document.getElementById('nota-titulo-input').value = '';
+    document.getElementById('nota-texto-input').value = '';
+  });
+
+  document.getElementById('btn-guardar-nota').addEventListener('click', () => {
+    const titulo = document.getElementById('nota-titulo-input').value.trim();
+    const texto = document.getElementById('nota-texto-input').value.trim();
+
+    if (!titulo) {
+      alert('Por favor ingresá un título para la nota.');
+      return;
+    }
+
+    const clave = 'dot-notas-' + eventoActual.id;
+    const notas = JSON.parse(localStorage.getItem(clave) || '[]');
+    notas.push({ id: Date.now(), titulo, texto, creado: new Date().toISOString() });
+    localStorage.setItem(clave, JSON.stringify(notas));
+
+    document.getElementById('form-nota').style.display = 'none';
+    document.getElementById('nota-titulo-input').value = '';
+    document.getElementById('nota-texto-input').value = '';
+    renderizarNotas();
+  });
+
+  // Tabs
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -116,8 +141,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Botón editar
   document.getElementById('btn-editar').addEventListener('click', () => {
     window.location.href = '/pages/editar-evento?id=' + evento.id;
   });
 
 });
+
+function renderizarNotas() {
+  const clave = 'dot-notas-' + eventoActual.id;
+  const notas = JSON.parse(localStorage.getItem(clave) || '[]');
+  const notaList = document.getElementById('nota-list');
+
+  if (notas.length === 0) {
+    notaList.innerHTML = '<div class="event-empty">No hay notas todavía.</div>';
+    return;
+  }
+
+  notaList.innerHTML = notas.map(n => `
+    <div class="nota-card">
+      <div class="nota-header">
+        <div class="nota-titulo">${n.titulo}</div>
+        <button class="btn-eliminar-nota" onclick="eliminarNota(${n.id})">✕</button>
+      </div>
+      <div class="nota-texto">${n.texto || '—'}</div>
+    </div>
+  `).join('');
+}
+
+function eliminarNota(notaId) {
+  if (!confirm('¿Eliminar esta nota?')) return;
+  const clave = 'dot-notas-' + eventoActual.id;
+  const notas = JSON.parse(localStorage.getItem(clave) || '[]');
+  const nuevas = notas.filter(n => n.id !== notaId);
+  localStorage.setItem(clave, JSON.stringify(nuevas));
+  renderizarNotas();
+}

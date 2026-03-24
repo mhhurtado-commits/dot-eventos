@@ -31,7 +31,6 @@
   color: #888;
 }
 
-/* Tabs */
 .tabs {
   display: flex;
   gap: 4px;
@@ -52,24 +51,16 @@
   transition: color 0.2s;
 }
 
-.tab:hover {
-  color: #7F77DD;
-}
+.tab:hover { color: #7F77DD; }
 
 .tab.active {
   color: #7F77DD;
   border-bottom-color: #7F77DD;
 }
 
-.tab-content {
-  display: none;
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-.tab-content.active {
-  display: block;
-}
-
-/* Info card */
 .info-card {
   background: #fff;
   border-radius: 10px;
@@ -85,9 +76,7 @@
   border-bottom: 0.5px solid #f0eeff;
 }
 
-.info-row:last-child {
-  border-bottom: none;
-}
+.info-row:last-child { border-bottom: none; }
 
 .info-label {
   font-size: 13px;
@@ -100,7 +89,6 @@
   color: #1a1a2e;
 }
 
-/* Section header */
 .section-header {
   display: flex;
   align-items: center;
@@ -113,7 +101,6 @@
   font-size: 12px;
 }
 
-/* Reservas */
 .reserva-list,
 .movimiento-list,
 .nota-list {
@@ -160,13 +147,8 @@
   font-weight: 600;
 }
 
-.movimiento-monto.egreso {
-  color: #D85A30;
-}
-
-.movimiento-monto.ingreso {
-  color: #1D9E75;
-}
+.movimiento-monto.egreso { color: #D85A30; }
+.movimiento-monto.ingreso { color: #1D9E75; }
 
 .movimiento-fecha {
   font-size: 12px;
@@ -174,15 +156,51 @@
   margin-top: 4px;
 }
 
+.nota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
 .nota-titulo {
   font-size: 14px;
   font-weight: 500;
   color: #1a1a2e;
-  margin-bottom: 6px;
 }
 
 .nota-texto {
   font-size: 13px;
   color: #666;
   line-height: 1.6;
+}
+
+.btn-eliminar-nota {
+  background: transparent;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.btn-eliminar-nota:hover { color: #D85A30; }
+
+.form-nota {
+  background: #fff;
+  border-radius: 10px;
+  border: 0.5px solid #e8e6f0;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.form-nota-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
