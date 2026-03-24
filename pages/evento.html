@@ -1,131 +1,124 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Evento · DOT Eventos</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/dashboard.css" />
-  <link rel="stylesheet" href="../css/evento.css" />
-</head>
-<body class="db-body-page">
+const eventos = [
+  { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
+  { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
+  { id: 3, nombre: 'Reunión corporativa TechCorp', fecha: '2026-05-10', lugar: 'Hotel Diplomático', estado: 'progreso', presupuesto: 210000 },
+  { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
+];
 
-  <nav class="db-nav">
-    <div class="db-nav-logo">
-      <div class="db-nav-icon">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="5" fill="white"/>
-          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
-          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
-          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
-          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
-        </svg>
+const reservasPrueba = [
+  { nombre: 'Fotografía', contacto: 'Juan Pérez', telefono: '261-555-1234', estado: 'confirmado' },
+  { nombre: 'Catering', contacto: 'La Cocina', telefono: '261-555-5678', estado: 'progreso' }
+];
+
+const movimientosPrueba = [
+  { concepto: 'Seña fotografía', monto: -15000, fecha: '2026-03-10', tipo: 'egreso' },
+  { concepto: 'Anticipo cliente', monto: 100000, fecha: '2026-03-05', tipo: 'ingreso' }
+];
+
+const notasPrueba = [
+  { titulo: 'Paleta de colores', texto: 'Blanco, verde sage y dorado. Evitar colores fuertes.' },
+  { titulo: 'Sitio de fotos', texto: 'https://drive.google.com/carpeta-garcia' }
+];
+
+const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
+const badges = {
+  confirmado: 'badge-confirmado',
+  progreso: 'badge-progreso',
+  borrador: 'badge-borrador'
+};
+const etiquetas = {
+  confirmado: 'Confirmado',
+  progreso: 'En progreso',
+  borrador: 'Borrador'
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id'));
+
+  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
+  const todosLosEventos = [...eventos, ...eventosGuardados];
+  const evento = todosLosEventos.find(e => e.id === id) || eventos[0];
+  const idx = todosLosEventos.findIndex(e => e.id === evento.id);
+
+  const color = colores[idx % colores.length];
+  document.getElementById('evento-dot').style.background = color;
+  document.getElementById('evento-titulo').textContent = evento.nombre;
+
+  const fecha = new Date(evento.fecha);
+  const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const lugar = evento.lugar ? ' · ' + evento.lugar : '';
+  document.getElementById('evento-meta').textContent = fechaStr + lugar;
+
+  const badge = document.getElementById('evento-badge');
+  badge.textContent = etiquetas[evento.estado] || 'Borrador';
+  badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
+
+  const gastado = movimientosPrueba
+    .filter(m => m.tipo === 'egreso')
+    .reduce((acc, m) => acc + Math.abs(m.monto), 0);
+  const saldo = evento.presupuesto - gastado;
+
+  document.getElementById('ev-presupuesto').textContent = '$' + evento.presupuesto.toLocaleString('es-AR');
+  document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
+  document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
+
+  document.getElementById('info-nombre').textContent = evento.nombre;
+  document.getElementById('info-fecha').textContent = fechaStr;
+  document.getElementById('info-lugar').textContent = evento.lugar || '—';
+  document.getElementById('info-estado').textContent = etiquetas[evento.estado] || 'Borrador';
+
+  const reservaList = document.getElementById('reserva-list');
+  if (reservasPrueba.length > 0) {
+    reservaList.innerHTML = reservasPrueba.map(r => `
+      <div class="reserva-card">
+        <div class="reserva-nombre">${r.nombre}</div>
+        <div class="reserva-detalle">${r.contacto} · ${r.telefono}</div>
+        <span class="event-badge ${badges[r.estado] || 'badge-borrador'}" style="margin-top:8px;display:inline-block;">
+          ${etiquetas[r.estado] || 'Borrador'}
+        </span>
       </div>
-      <span class="db-nav-name">DOT</span>
-    </div>
-    <div class="db-nav-right">
-      <button class="btn-logout" onclick="window.location.href='dashboard.html'">← Volver</button>
-    </div>
-  </nav>
+    `).join('');
+  }
 
-  <div class="db-content">
-
-    <!-- Encabezado del evento -->
-    <div class="evento-header">
-      <div class="evento-header-left">
-        <div class="evento-dot" id="evento-dot"></div>
-        <div>
-          <h1 class="evento-titulo" id="evento-titulo">Cargando...</h1>
-          <div class="evento-meta" id="evento-meta"></div>
+  const movList = document.getElementById('movimiento-list');
+  if (movimientosPrueba.length > 0) {
+    movList.innerHTML = movimientosPrueba.map(m => `
+      <div class="movimiento-card">
+        <div class="movimiento-row">
+          <span class="movimiento-concepto">${m.concepto}</span>
+          <span class="movimiento-monto ${m.tipo}">
+            ${m.tipo === 'egreso' ? '-' : '+'}$${Math.abs(m.monto).toLocaleString('es-AR')}
+          </span>
         </div>
+        <div class="movimiento-fecha">${new Date(m.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
       </div>
-      <span class="event-badge" id="evento-badge"></span>
-    </div>
+    `).join('');
+  }
 
-    <!-- Métricas del evento -->
-    <div class="db-metrics">
-      <div class="metric">
-        <div class="metric-label">Presupuesto</div>
-        <div class="metric-value metric-value-sm" id="ev-presupuesto">—</div>
-        <div class="metric-sub">Total estimado</div>
+  const notaList = document.getElementById('nota-list');
+  if (notasPrueba.length > 0) {
+    notaList.innerHTML = notasPrueba.map(n => `
+      <div class="nota-card">
+        <div class="nota-titulo">${n.titulo}</div>
+        <div class="nota-texto">${n.texto}</div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Gastado</div>
-        <div class="metric-value metric-value-sm" id="ev-gastado">$0</div>
-        <div class="metric-sub">Pagos realizados</div>
-      </div>
-      <div class="metric">
-        <div class="metric-label">Saldo</div>
-        <div class="metric-value metric-value-sm" id="ev-saldo">—</div>
-        <div class="metric-sub">Disponible</div>
-      </div>
-    </div>
+    `).join('');
+  }
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" data-tab="info">Información</button>
-      <button class="tab" data-tab="reservas">Reservas</button>
-      <button class="tab" data-tab="presupuesto">Presupuesto</button>
-      <button class="tab" data-tab="notas">Notas</button>
-    </div>
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
 
-    <!-- Tab: Información -->
-    <div class="tab-content active" id="tab-info">
-      <div class="info-card">
-        <div class="info-row">
-          <span class="info-label">Nombre</span>
-          <span class="info-value" id="info-nombre">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Fecha</span>
-          <span class="info-value" id="info-fecha">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Lugar</span>
-          <span class="info-value" id="info-lugar">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Estado</span>
-          <span class="info-value" id="info-estado">—</span>
-        </div>
-      </div>
-    </div>
+  // Botón editar
+  document.getElementById('btn-editar').addEventListener('click', () => {
+    window.location.href = 'editar-evento.html?id=' + evento.id;
+  });
 
-    <!-- Tab: Reservas -->
-    <div class="tab-content" id="tab-reservas">
-      <div class="section-header">
-        <span class="db-section-title">Reservas</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
-      </div>
-      <div class="reserva-list" id="reserva-list">
-        <div class="event-empty">No hay reservas todavía.</div>
-      </div>
-    </div>
-
-    <!-- Tab: Presupuesto -->
-    <div class="tab-content" id="tab-presupuesto">
-      <div class="section-header">
-        <span class="db-section-title">Movimientos</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
-      </div>
-      <div class="movimiento-list" id="movimiento-list">
-        <div class="event-empty">No hay movimientos todavía.</div>
-      </div>
-    </div>
-
-    <!-- Tab: Notas -->
-    <div class="tab-content" id="tab-notas">
-      <div class="section-header">
-        <span class="db-section-title">Notas</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
-      </div>
-      <div class="nota-list" id="nota-list">
-        <div class="event-empty">No hay notas todavía.</div>
-      </div>
-    </div>
-
-  </div>
-
-  <script src="../js/evento.js"></script>
-</body>
-</html>
+});

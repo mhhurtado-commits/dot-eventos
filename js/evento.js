@@ -1,4 +1,3 @@
-// Datos de prueba
 const eventos = [
   { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
   { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
@@ -35,13 +34,14 @@ const etiquetas = {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Obtener ID del evento desde la URL
   const params = new URLSearchParams(window.location.search);
   const id = parseInt(params.get('id'));
-  const evento = eventos.find(e => e.id === id) || eventos[0];
-  const idx = eventos.findIndex(e => e.id === id) || 0;
 
-  // Encabezado
+  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
+  const todosLosEventos = [...eventos, ...eventosGuardados];
+  const evento = todosLosEventos.find(e => e.id === id) || eventos[0];
+  const idx = todosLosEventos.findIndex(e => e.id === evento.id);
+
   const color = colores[idx % colores.length];
   document.getElementById('evento-dot').style.background = color;
   document.getElementById('evento-titulo').textContent = evento.nombre;
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
   badge.textContent = etiquetas[evento.estado] || 'Borrador';
   badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
 
-  // Métricas
   const gastado = movimientosPrueba
     .filter(m => m.tipo === 'egreso')
     .reduce((acc, m) => acc + Math.abs(m.monto), 0);
@@ -65,13 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
   document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
 
-  // Info
   document.getElementById('info-nombre').textContent = evento.nombre;
   document.getElementById('info-fecha').textContent = fechaStr;
   document.getElementById('info-lugar').textContent = evento.lugar || '—';
   document.getElementById('info-estado').textContent = etiquetas[evento.estado] || 'Borrador';
 
-  // Reservas
   const reservaList = document.getElementById('reserva-list');
   if (reservasPrueba.length > 0) {
     reservaList.innerHTML = reservasPrueba.map(r => `
@@ -85,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // Movimientos
   const movList = document.getElementById('movimiento-list');
   if (movimientosPrueba.length > 0) {
     movList.innerHTML = movimientosPrueba.map(m => `
@@ -101,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // Notas
   const notaList = document.getElementById('nota-list');
   if (notasPrueba.length > 0) {
     notaList.innerHTML = notasPrueba.map(n => `
@@ -112,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // Tabs
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -120,6 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
       tab.classList.add('active');
       document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
     });
+  });
+
+  // Botón editar
+  document.getElementById('btn-editar').addEventListener('click', () => {
+    window.location.href = 'editar-evento.html?id=' + evento.id;
   });
 
 });

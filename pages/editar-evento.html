@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Editar evento · DOT Eventos</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/nuevo-evento.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" id="btn-volver">← Volver</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+
+    <div class="db-header">
+      <div>
+        <div class="db-title">Editar evento</div>
+        <div class="db-subtitle" id="subtitulo">Modificá los datos del evento</div>
+      </div>
+      <button class="btn-eliminar" id="btn-eliminar">Eliminar evento</button>
+    </div>
+
+    <div class="form-card">
+
+      <div class="form-group">
+        <label class="form-label">Nombre del evento</label>
+        <input type="text" id="nombre" class="form-input" placeholder="Ej: Casamiento García" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input type="date" id="fecha" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select id="estado" class="form-input">
+            <option value="borrador">Borrador</option>
+            <option value="progreso">En progreso</option>
+            <option value="confirmado">Confirmado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Lugar</label>
+        <input type="text" id="lugar" class="form-input" placeholder="Ej: Salón Los Aromos" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Presupuesto estimado</label>
+        <div class="input-prefix">
+          <span class="prefix">$</span>
+          <input type="number" id="presupuesto" class="form-input with-prefix" placeholder="0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas iniciales</label>
+        <textarea id="notas" class="form-input form-textarea" placeholder="Paleta de colores, referencias, ideas..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-cancel" id="btn-cancelar">Cancelar</button>
+        <button class="btn-new" id="btn-guardar">Guardar cambios</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="../js/editar-evento.js"></script>
+</body>
+</html>
