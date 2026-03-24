@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Evento · DOT Eventos</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/evento.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" onclick="window.location.href='dashboard.html'">← Volver</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+
+    <!-- Encabezado del evento -->
+    <div class="evento-header">
+      <div class="evento-header-left">
+        <div class="evento-dot" id="evento-dot"></div>
+        <div>
+          <h1 class="evento-titulo" id="evento-titulo">Cargando...</h1>
+          <div class="evento-meta" id="evento-meta"></div>
+        </div>
+      </div>
+      <span class="event-badge" id="evento-badge"></span>
+    </div>
+
+    <!-- Métricas del evento -->
+    <div class="db-metrics">
+      <div class="metric">
+        <div class="metric-label">Presupuesto</div>
+        <div class="metric-value metric-value-sm" id="ev-presupuesto">—</div>
+        <div class="metric-sub">Total estimado</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Gastado</div>
+        <div class="metric-value metric-value-sm" id="ev-gastado">$0</div>
+        <div class="metric-sub">Pagos realizados</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Saldo</div>
+        <div class="metric-value metric-value-sm" id="ev-saldo">—</div>
+        <div class="metric-sub">Disponible</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="info">Información</button>
+      <button class="tab" data-tab="reservas">Reservas</button>
+      <button class="tab" data-tab="presupuesto">Presupuesto</button>
+      <button class="tab" data-tab="notas">Notas</button>
+    </div>
+
+    <!-- Tab: Información -->
+    <div class="tab-content active" id="tab-info">
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">Nombre</span>
+          <span class="info-value" id="info-nombre">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Fecha</span>
+          <span class="info-value" id="info-fecha">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Lugar</span>
+          <span class="info-value" id="info-lugar">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Estado</span>
+          <span class="info-value" id="info-estado">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Reservas -->
+    <div class="tab-content" id="tab-reservas">
+      <div class="section-header">
+        <span class="db-section-title">Reservas</span>
+        <button class="btn-new btn-sm">+ Agregar</button>
+      </div>
+      <div class="reserva-list" id="reserva-list">
+        <div class="event-empty">No hay reservas todavía.</div>
+      </div>
+    </div>
+
+    <!-- Tab: Presupuesto -->
+    <div class="tab-content" id="tab-presupuesto">
+      <div class="section-header">
+        <span class="db-section-title">Movimientos</span>
+        <button class="btn-new btn-sm">+ Agregar</button>
+      </div>
+      <div class="movimiento-list" id="movimiento-list">
+        <div class="event-empty">No hay movimientos todavía.</div>
+      </div>
+    </div>
+
+    <!-- Tab: Notas -->
+    <div class="tab-content" id="tab-notas">
+      <div class="section-header">
+        <span class="db-section-title">Notas</span>
+        <button class="btn-new btn-sm">+ Agregar</button>
+      </div>
+      <div class="nota-list" id="nota-list">
+        <div class="event-empty">No hay notas todavía.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/evento.js"></script>
+</body>
+</html>

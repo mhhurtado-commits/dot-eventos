@@ -1,0 +1,101 @@
+document.addEventListener('DOMContentLoaded', () => {
+
+  const nombre = 'Miguel';
+  const iniciales = 'MH';
+
+  document.getElementById('user-greeting').textContent = 'Bienvenido, ' + nombre;
+  document.getElementById('user-avatar').textContent = iniciales;
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    window.location.href = '../index.html';
+  });
+
+  document.getElementById('btn-nuevo').addEventListener('click', () => {
+    window.location.href = 'nuevo-evento.html';
+  });
+
+  // Cargar eventos desde localStorage
+  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
+
+  // Eventos de prueba si no hay ninguno guardado
+  const eventosPrueba = [
+    { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
+    { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
+    { id: 3, nombre: 'Reunión corporativa TechCorp', fecha: '2026-05-10', lugar: 'Hotel Diplomático', estado: 'progreso', presupuesto: 210000 },
+    { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
+  ];
+
+  const eventos = eventosGuardados.length > 0
+    ? [...eventosPrueba, ...eventosGuardados]
+    : eventosPrueba;
+
+  actualizarMetricas(eventos);
+  renderizarEventos(eventos);
+});
+
+function actualizarMetricas(eventos) {
+  const hoy = new Date();
+  const activos = eventos.filter(e => new Date(e.fecha) >= hoy);
+
+  document.getElementById('metric-activos').textContent = activos.length;
+  document.getElementById('metric-presupuesto-sub').textContent = eventos.length + ' eventos';
+
+  const totalPresupuesto = eventos.reduce((acc, e) => acc + (e.presupuesto || 0), 0);
+  document.getElementById('metric-presupuesto').textContent = '$' + totalPresupuesto.toLocaleString('es-AR');
+
+  if (activos.length > 0) {
+    const proximo = activos[0];
+    const fecha = new Date(proximo.fecha);
+    const dia = fecha.getDate();
+    const mes = fecha.toLocaleString('es-AR', { month: 'short' });
+    document.getElementById('metric-proximo').textContent = dia + ' ' + mes;
+    document.getElementById('metric-proximo-nombre').textContent = proximo.nombre;
+  }
+}
+
+function renderizarEventos(eventos) {
+  const lista = document.getElementById('event-list');
+
+  if (eventos.length === 0) {
+    lista.innerHTML = '<div class="event-empty">Todavía no tenés eventos. ¡Creá el primero!</div>';
+    return;
+  }
+
+  const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
+  const badges = {
+    confirmado: 'badge-confirmado',
+    progreso: 'badge-progreso',
+    borrador: 'badge-borrador'
+  };
+  const etiquetas = {
+    confirmado: 'Confirmado',
+    progreso: 'En progreso',
+    borrador: 'Borrador'
+  };
+
+  // Ordenar por fecha
+  eventos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+  lista.innerHTML = eventos.map((evento, i) => {
+    const fecha = new Date(evento.fecha);
+    const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+    const color = colores[i % colores.length];
+    const estado = evento.estado || 'borrador';
+    const badge = badges[estado] || 'badge-borrador';
+    const etiqueta = etiquetas[estado] || 'Borrador';
+    const presupuesto = evento.presupuesto ? '$' + evento.presupuesto.toLocaleString('es-AR') : '—';
+    const lugar = evento.lugar ? ' · ' + evento.lugar : '';
+
+    return `
+      <div class="event-card" onclick="window.location.href='evento.html?id=${evento.id}'">
+        <div class="event-dot" style="background:${color};"></div>
+        <div class="event-info">
+          <div class="event-name">${evento.nombre}</div>
+          <div class="event-date">${fechaStr}${lugar}</div>
+        </div>
+        <span class="event-badge ${badge}">${etiqueta}</span>
+        <div class="event-amount">${presupuesto}</div>
+      </div>
+    `;
+  }).join('');
+}

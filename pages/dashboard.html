@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard · DOT Eventos</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <div class="db-avatar" id="user-avatar">MH</div>
+      <button class="btn-logout" id="btn-logout">Salir</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+    <div class="db-header">
+      <div>
+        <div class="db-title">Mis eventos</div>
+        <div class="db-subtitle" id="user-greeting">Bienvenido</div>
+      </div>
+      <button class="btn-new" id="btn-nuevo">+ Nuevo evento</button>
+    </div>
+
+    <div class="db-metrics">
+      <div class="metric">
+        <div class="metric-label">Eventos activos</div>
+        <div class="metric-value" id="metric-activos">0</div>
+        <div class="metric-sub">Este mes</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Próximo evento</div>
+        <div class="metric-value metric-value-sm" id="metric-proximo">—</div>
+        <div class="metric-sub" id="metric-proximo-nombre">Sin eventos</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Presupuesto total</div>
+        <div class="metric-value metric-value-sm" id="metric-presupuesto">$0</div>
+        <div class="metric-sub" id="metric-presupuesto-sub">0 eventos</div>
+      </div>
+    </div>
+
+    <div class="db-section-title">Próximos eventos</div>
+    <div class="event-list" id="event-list">
+      <div class="event-empty">Todavía no tenés eventos. ¡Creá el primero!</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>
