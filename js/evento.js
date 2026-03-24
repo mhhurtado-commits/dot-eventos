@@ -5,16 +5,6 @@ const eventos = [
   { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
 ];
 
-const reservasPrueba = [
-  { nombre: 'Fotografía', contacto: 'Juan Pérez', telefono: '261-555-1234', estado: 'confirmado' },
-  { nombre: 'Catering', contacto: 'La Cocina', telefono: '261-555-5678', estado: 'progreso' }
-];
-
-const movimientosPrueba = [
-  { concepto: 'Seña fotografía', monto: -15000, fecha: '2026-03-10', tipo: 'egreso' },
-  { concepto: 'Anticipo cliente', monto: 100000, fecha: '2026-03-05', tipo: 'ingreso' }
-];
-
 const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
 const badges = {
   confirmado: 'badge-confirmado',
@@ -26,6 +16,11 @@ const etiquetas = {
   progreso: 'En progreso',
   borrador: 'Borrador'
 };
+
+const reservasPrueba = [
+  { nombre: 'Fotografía', contacto: 'Juan Pérez', telefono: '261-555-1234', estado: 'confirmado' },
+  { nombre: 'Catering', contacto: 'La Cocina', telefono: '261-555-5678', estado: 'progreso' }
+];
 
 let eventoActual = null;
 
@@ -53,15 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
   badge.textContent = etiquetas[evento.estado] || 'Borrador';
   badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
 
-  const gastado = movimientosPrueba
-    .filter(m => m.tipo === 'egreso')
-    .reduce((acc, m) => acc + Math.abs(m.monto), 0);
-  const saldo = evento.presupuesto - gastado;
-
-  document.getElementById('ev-presupuesto').textContent = '$' + evento.presupuesto.toLocaleString('es-AR');
-  document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
-  document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
-
   document.getElementById('info-nombre').textContent = evento.nombre;
   document.getElementById('info-fecha').textContent = fechaStr;
   document.getElementById('info-lugar').textContent = evento.lugar || '—';
@@ -69,38 +55,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Reservas
   const reservaList = document.getElementById('reserva-list');
-  if (reservasPrueba.length > 0) {
-    reservaList.innerHTML = reservasPrueba.map(r => `
-      <div class="reserva-card">
-        <div class="reserva-nombre">${r.nombre}</div>
-        <div class="reserva-detalle">${r.contacto} · ${r.telefono}</div>
-        <span class="event-badge ${badges[r.estado] || 'badge-borrador'}" style="margin-top:8px;display:inline-block;">
-          ${etiquetas[r.estado] || 'Borrador'}
-        </span>
-      </div>
-    `).join('');
-  }
+  reservaList.innerHTML = reservasPrueba.map(r => `
+    <div class="reserva-card">
+      <div class="reserva-nombre">${r.nombre}</div>
+      <div class="reserva-detalle">${r.contacto} · ${r.telefono}</div>
+      <span class="event-badge ${badges[r.estado] || 'badge-borrador'}" style="margin-top:8px;display:inline-block;">
+        ${etiquetas[r.estado] || 'Borrador'}
+      </span>
+    </div>
+  `).join('');
 
   // Movimientos
-  const movList = document.getElementById('movimiento-list');
-  if (movimientosPrueba.length > 0) {
-    movList.innerHTML = movimientosPrueba.map(m => `
-      <div class="movimiento-card">
-        <div class="movimiento-row">
-          <span class="movimiento-concepto">${m.concepto}</span>
-          <span class="movimiento-monto ${m.tipo}">
-            ${m.tipo === 'egreso' ? '-' : '+'}$${Math.abs(m.monto).toLocaleString('es-AR')}
-          </span>
-        </div>
-        <div class="movimiento-fecha">${new Date(m.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
-      </div>
-    `).join('');
-  }
+  renderizarMovimientos();
+  actualizarMetricas();
+
+  document.getElementById('btn-agregar-movimiento').addEventListener('click', () => {
+    document.getElementById('form-movimiento').style.display = 'flex';
+    document.getElementById('mov-fecha').valueAsDate = new Date();
+  });
+
+  document.getElementById('btn-cancelar-movimiento').addEventListener('click', () => {
+    document.getElementById('form-movimiento').style.display = 'none';
+    limpiarFormMovimiento();
+  });
+
+  document.getElementById('btn-guardar-movimiento').addEventListener('click', () => {
+    const concepto = document.getElementById('mov-concepto').value.trim();
+    const tipo = document.getElementById('mov-tipo').value;
+    const monto = parseFloat(document.getElementById('mov-monto').value) || 0;
+    const fecha = document.getElementById('mov-fecha').value;
+
+    if (!concepto) {
+      alert('Por favor ingresá un concepto.');
+      return;
+    }
+    if (!monto || monto <= 0) {
+      alert('Por favor ingresá un monto válido.');
+      return;
+    }
+    if (!fecha) {
+      alert('Por favor seleccioná una fecha.');
+      return;
+    }
+
+    const clave = 'dot-movimientos-' + eventoActual.id;
+    const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
+    movimientos.push({ id: Date.now(), concepto, tipo, monto, fecha });
+    localStorage.setItem(clave, JSON.stringify(movimientos));
+
+    document.getElementById('form-movimiento').style.display = 'none';
+    limpiarFormMovimiento();
+    renderizarMovimientos();
+    actualizarMetricas();
+  });
 
   // Notas
   renderizarNotas();
 
-  // Botón agregar nota
   document.getElementById('btn-agregar-nota').addEventListener('click', () => {
     document.getElementById('form-nota').style.display = 'flex';
   });
@@ -141,12 +152,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Botón editar
   document.getElementById('btn-editar').addEventListener('click', () => {
     window.location.href = '/pages/editar-evento?id=' + evento.id;
   });
 
 });
+
+function limpiarFormMovimiento() {
+  document.getElementById('mov-concepto').value = '';
+  document.getElementById('mov-monto').value = '';
+  document.getElementById('mov-fecha').value = '';
+  document.getElementById('mov-tipo').value = 'egreso';
+}
+
+function actualizarMetricas() {
+  const clave = 'dot-movimientos-' + eventoActual.id;
+  const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
+
+  const gastado = movimientos
+    .filter(m => m.tipo === 'egreso')
+    .reduce((acc, m) => acc + m.monto, 0);
+
+  const saldo = (eventoActual.presupuesto || 0) - gastado;
+
+  document.getElementById('ev-presupuesto').textContent = '$' + (eventoActual.presupuesto || 0).toLocaleString('es-AR');
+  document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
+  document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
+
+  const elSaldo = document.getElementById('ev-saldo');
+  elSaldo.style.color = saldo >= 0 ? '#1D9E75' : '#D85A30';
+}
+
+function renderizarMovimientos() {
+  const clave = 'dot-movimientos-' + eventoActual.id;
+  const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
+  const movList = document.getElementById('movimiento-list');
+
+  if (movimientos.length === 0) {
+    movList.innerHTML = '<div class="event-empty">No hay movimientos todavía.</div>';
+    return;
+  }
+
+  movimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+  movList.innerHTML = movimientos.map(m => `
+    <div class="movimiento-card">
+      <div class="movimiento-row">
+        <span class="movimiento-concepto">${m.concepto}</span>
+        <span class="movimiento-monto ${m.tipo}">
+          ${m.tipo === 'egreso' ? '-' : '+'}$${m.monto.toLocaleString('es-AR')}
+        </span>
+      </div>
+      <div class="movimiento-footer">
+        <span class="movimiento-fecha">${new Date(m.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</span>
+        <button class="btn-eliminar-nota" onclick="eliminarMovimiento(${m.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function eliminarMovimiento(movId) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  const clave = 'dot-movimientos-' + eventoActual.id;
+  const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
+  const nuevos = movimientos.filter(m => m.id !== movId);
+  localStorage.setItem(clave, JSON.stringify(nuevos));
+  renderizarMovimientos();
+  actualizarMetricas();
+}
 
 function renderizarNotas() {
   const clave = 'dot-notas-' + eventoActual.id;

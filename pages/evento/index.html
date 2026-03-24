@@ -101,8 +101,34 @@
     <div class="tab-content" id="tab-presupuesto">
       <div class="section-header">
         <span class="db-section-title">Movimientos</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
+        <button class="btn-new btn-sm" id="btn-agregar-movimiento">+ Agregar</button>
       </div>
+
+      <div class="form-nota" id="form-movimiento" style="display:none;">
+        <input type="text" id="mov-concepto" class="form-input" placeholder="Concepto (ej: Seña fotografía)" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select id="mov-tipo" class="form-input">
+              <option value="egreso">Egreso (gasto)</option>
+              <option value="ingreso">Ingreso (cobro)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monto</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="mov-monto" class="form-input with-prefix" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <input type="date" id="mov-fecha" class="form-input" />
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-movimiento">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-movimiento">Guardar movimiento</button>
+        </div>
+      </div>
+
       <div class="movimiento-list" id="movimiento-list">
         <div class="event-empty">No hay movimientos todavía.</div>
       </div>
