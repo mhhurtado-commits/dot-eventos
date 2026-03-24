@@ -30,10 +30,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
 }
 
-/* Logo */
 .logo {
   display: flex;
   align-items: center;
@@ -51,10 +49,7 @@ body {
   justify-content: center;
 }
 
-.logo-icon svg {
-  width: 26px;
-  height: 26px;
-}
+.logo-icon svg { width: 26px; height: 26px; }
 
 .logo-text {
   display: flex;
@@ -77,7 +72,6 @@ body {
   text-transform: uppercase;
 }
 
-/* Tagline */
 .tagline {
   font-size: 14px;
   color: #666;
@@ -85,7 +79,6 @@ body {
   text-align: center;
 }
 
-/* Botón Google */
 .btn-google {
   width: 100%;
   display: flex;
@@ -104,11 +97,8 @@ body {
   transition: background 0.2s;
 }
 
-.btn-google:hover {
-  background: #f9f9f9;
-}
+.btn-google:hover { background: #f9f9f9; }
 
-/* Divider */
 .divider {
   width: 100%;
   display: flex;
@@ -129,7 +119,6 @@ body {
   white-space: nowrap;
 }
 
-/* Formulario */
 .form {
   width: 100%;
   display: flex;
@@ -150,11 +139,8 @@ body {
   transition: border 0.2s;
 }
 
-.form input:focus {
-  border-color: #7F77DD;
-}
+.form input:focus { border-color: #7F77DD; }
 
-/* Botón principal */
 .btn-primary {
   width: 100%;
   padding: 11px;
@@ -168,14 +154,32 @@ body {
   transition: background 0.2s;
 }
 
-.btn-primary:hover {
-  background: #534AB7;
-}
+.btn-primary:hover { background: #534AB7; }
 
-/* Nota al pie */
 .footer-note {
   font-size: 12px;
   color: #aaa;
   text-align: center;
   margin-top: 0.5rem;
 }
+
+/* Toast de notificaciones */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #1a1a2e;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  transition: transform 0.3s ease;
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: #1D9E75; }
+.toast.error { background: #D85A30; }

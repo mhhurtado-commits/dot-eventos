@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-
   const eventosPrueba = [
     { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
     { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
@@ -23,12 +22,36 @@ document.addEventListener('DOMContentLoaded', () => {
     { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
   ];
 
-  const eventos = eventosGuardados.length > 0
+  const todosLosEventos = eventosGuardados.length > 0
     ? [...eventosPrueba, ...eventosGuardados]
     : eventosPrueba;
 
-  actualizarMetricas(eventos);
-  renderizarEventos(eventos);
+  actualizarMetricas(todosLosEventos);
+  renderizarEventos(todosLosEventos);
+
+  // Búsqueda
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtrados = todosLosEventos.filter(ev =>
+      ev.nombre.toLowerCase().includes(query) ||
+      (ev.lugar || '').toLowerCase().includes(query)
+    );
+    renderizarEventos(filtrados);
+  });
+
+  // Filtros
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filtro = btn.dataset.filtro;
+      const filtrados = filtro === 'todos'
+        ? todosLosEventos
+        : todosLosEventos.filter(e => e.estado === filtro);
+      renderizarEventos(filtrados);
+    });
+  });
+
 });
 
 function actualizarMetricas(eventos) {
@@ -42,7 +65,7 @@ function actualizarMetricas(eventos) {
   document.getElementById('metric-presupuesto').textContent = '$' + totalPresupuesto.toLocaleString('es-AR');
 
   if (activos.length > 0) {
-    const proximo = activos[0];
+    const proximo = activos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0];
     const fecha = new Date(proximo.fecha);
     const dia = fecha.getDate();
     const mes = fecha.toLocaleString('es-AR', { month: 'short' });
@@ -55,7 +78,7 @@ function renderizarEventos(eventos) {
   const lista = document.getElementById('event-list');
 
   if (eventos.length === 0) {
-    lista.innerHTML = '<div class="event-empty">Todavía no tenés eventos. ¡Creá el primero!</div>';
+    lista.innerHTML = '<div class="event-empty">No se encontraron eventos.</div>';
     return;
   }
 
@@ -82,12 +105,17 @@ function renderizarEventos(eventos) {
     const etiqueta = etiquetas[estado] || 'Borrador';
     const presupuesto = evento.presupuesto ? '$' + evento.presupuesto.toLocaleString('es-AR') : '—';
     const lugar = evento.lugar ? ' · ' + evento.lugar : '';
+    const hoy = new Date();
+    const diasRestantes = Math.ceil((new Date(evento.fecha) - hoy) / (1000 * 60 * 60 * 24));
+    const diasTag = diasRestantes >= 0 && diasRestantes <= 30
+      ? `<span style="font-size:11px;color:#854F0B;background:#faeeda;padding:2px 8px;border-radius:20px;margin-left:8px;">${diasRestantes === 0 ? '¡Hoy!' : 'En ' + diasRestantes + ' días'}</span>`
+      : '';
 
     return `
       <div class="event-card" onclick="window.location.href='/pages/evento?id=${evento.id}'">
         <div class="event-dot" style="background:${color};"></div>
         <div class="event-info">
-          <div class="event-name">${evento.nombre}</div>
+          <div class="event-name">${evento.nombre} ${diasTag}</div>
           <div class="event-date">${fechaStr}${lugar}</div>
         </div>
         <span class="event-badge ${badge}">${etiqueta}</span>
