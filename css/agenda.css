@@ -1,0 +1,83 @@
+.calendario {
+  background: #fff;
+  border-radius: 12px;
+  border: 0.5px solid #e8e6f0;
+  overflow: hidden;
+}
+
+.cal-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #7F77DD;
+}
+
+.cal-header span {
+  text-align: center;
+  padding: 10px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+}
+
+.cal-dia {
+  min-height: 56px;
+  padding: 6px;
+  border-right: 0.5px solid #f0eeff;
+  border-bottom: 0.5px solid #f0eeff;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-dia:hover { background: #f4f3ff; }
+.cal-dia.vacio { cursor: default; background: transparent; }
+.cal-dia.vacio:hover { background: transparent; }
+
+.cal-numero {
+  font-size: 13px;
+  color: #1a1a2e;
+  font-weight: 400;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.cal-dia.hoy .cal-numero {
+  background: #7F77DD;
+  color: #fff;
+  font-weight: 600;
+}
+
+.cal-dia.con-evento { background: #faf9ff; }
+
+.cal-puntos {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cal-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+@media (max-width: 480px) {
+  .cal-dia { min-height: 44px; padding: 4px; }
+  .cal-numero { font-size: 11px; width: 22px; height: 22px; }
+  .cal-header span { font-size: 10px; }
+}

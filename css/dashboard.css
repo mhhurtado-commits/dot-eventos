@@ -298,3 +298,16 @@
   .db-nav { padding: 0 1rem; }
   .event-amount { display: none; }
 }
+.btn-agenda {
+  background: transparent;
+  border: 0.5px solid #7F77DD;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7F77DD;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-agenda:hover { background: #f0eeff; }

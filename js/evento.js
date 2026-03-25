@@ -6,23 +6,19 @@ const eventos = [
 ];
 
 const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-const badges = {
-  confirmado: 'badge-confirmado',
-  progreso: 'badge-progreso',
-  borrador: 'badge-borrador'
-};
-const etiquetas = {
-  confirmado: 'Confirmado',
-  progreso: 'En progreso',
-  borrador: 'Borrador'
-};
-
-const reservasPrueba = [
-  { nombre: 'Fotografía', contacto: 'Juan Pérez', telefono: '261-555-1234', estado: 'confirmado' },
-  { nombre: 'Catering', contacto: 'La Cocina', telefono: '261-555-5678', estado: 'progreso' }
-];
+const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
+const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
 
 let eventoActual = null;
+
+function toast(msg, tipo = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + tipo;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -54,16 +50,38 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('info-estado').textContent = etiquetas[evento.estado] || 'Borrador';
 
   // Reservas
-  const reservaList = document.getElementById('reserva-list');
-  reservaList.innerHTML = reservasPrueba.map(r => `
-    <div class="reserva-card">
-      <div class="reserva-nombre">${r.nombre}</div>
-      <div class="reserva-detalle">${r.contacto} · ${r.telefono}</div>
-      <span class="event-badge ${badges[r.estado] || 'badge-borrador'}" style="margin-top:8px;display:inline-block;">
-        ${etiquetas[r.estado] || 'Borrador'}
-      </span>
-    </div>
-  `).join('');
+  renderizarReservas();
+
+  document.getElementById('btn-agregar-reserva').addEventListener('click', () => {
+    document.getElementById('form-reserva').style.display = 'flex';
+  });
+
+  document.getElementById('btn-cancelar-reserva').addEventListener('click', () => {
+    document.getElementById('form-reserva').style.display = 'none';
+    limpiarFormReserva();
+  });
+
+  document.getElementById('btn-guardar-reserva').addEventListener('click', () => {
+    const nombre = document.getElementById('res-nombre').value.trim();
+    const contacto = document.getElementById('res-contacto').value.trim();
+    const telefono = document.getElementById('res-telefono').value.trim();
+    const email = document.getElementById('res-email').value.trim();
+    const estado = document.getElementById('res-estado').value;
+    const notas = document.getElementById('res-notas').value.trim();
+
+    if (!nombre) { toast('Por favor ingresá el servicio.', 'error'); return; }
+    if (!contacto) { toast('Por favor ingresá el contacto.', 'error'); return; }
+
+    const clave = 'dot-reservas-' + eventoActual.id;
+    const reservas = JSON.parse(localStorage.getItem(clave) || '[]');
+    reservas.push({ id: Date.now(), nombre, contacto, telefono, email, estado, notas });
+    localStorage.setItem(clave, JSON.stringify(reservas));
+
+    document.getElementById('form-reserva').style.display = 'none';
+    limpiarFormReserva();
+    renderizarReservas();
+    toast('Reserva guardada');
+  });
 
   // Movimientos
   renderizarMovimientos();
@@ -85,18 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const monto = parseFloat(document.getElementById('mov-monto').value) || 0;
     const fecha = document.getElementById('mov-fecha').value;
 
-    if (!concepto) {
-      alert('Por favor ingresá un concepto.');
-      return;
-    }
-    if (!monto || monto <= 0) {
-      alert('Por favor ingresá un monto válido.');
-      return;
-    }
-    if (!fecha) {
-      alert('Por favor seleccioná una fecha.');
-      return;
-    }
+    if (!concepto) { toast('Por favor ingresá un concepto.', 'error'); return; }
+    if (!monto || monto <= 0) { toast('Por favor ingresá un monto válido.', 'error'); return; }
+    if (!fecha) { toast('Por favor seleccioná una fecha.', 'error'); return; }
 
     const clave = 'dot-movimientos-' + eventoActual.id;
     const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
@@ -107,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     limpiarFormMovimiento();
     renderizarMovimientos();
     actualizarMetricas();
+    toast('Movimiento guardado');
   });
 
   // Notas
@@ -126,20 +136,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const titulo = document.getElementById('nota-titulo-input').value.trim();
     const texto = document.getElementById('nota-texto-input').value.trim();
 
-    if (!titulo) {
-      alert('Por favor ingresá un título para la nota.');
-      return;
-    }
+    if (!titulo) { toast('Por favor ingresá un título.', 'error'); return; }
 
     const clave = 'dot-notas-' + eventoActual.id;
     const notas = JSON.parse(localStorage.getItem(clave) || '[]');
-    notas.push({ id: Date.now(), titulo, texto, creado: new Date().toISOString() });
+    notas.push({ id: Date.now(), titulo, texto });
     localStorage.setItem(clave, JSON.stringify(notas));
 
     document.getElementById('form-nota').style.display = 'none';
     document.getElementById('nota-titulo-input').value = '';
     document.getElementById('nota-texto-input').value = '';
     renderizarNotas();
+    toast('Nota guardada');
   });
 
   // Tabs
@@ -152,11 +160,60 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Editar
   document.getElementById('btn-editar').addEventListener('click', () => {
     window.location.href = '/pages/editar-evento?id=' + evento.id;
   });
 
+  // Exportar PDF
+  document.getElementById('btn-exportar').addEventListener('click', () => exportarPDF());
+
 });
+
+// ── Reservas ──────────────────────────────────────
+
+function limpiarFormReserva() {
+  ['res-nombre','res-contacto','res-telefono','res-email','res-notas'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('res-estado').value = 'borrador';
+}
+
+function renderizarReservas() {
+  const clave = 'dot-reservas-' + eventoActual.id;
+  const reservas = JSON.parse(localStorage.getItem(clave) || '[]');
+  const lista = document.getElementById('reserva-list');
+
+  if (reservas.length === 0) {
+    lista.innerHTML = '<div class="event-empty">No hay reservas todavía.</div>';
+    return;
+  }
+
+  lista.innerHTML = reservas.map(r => `
+    <div class="reserva-card">
+      <div class="reserva-header">
+        <div class="reserva-nombre">${r.nombre}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="event-badge ${badges[r.estado] || 'badge-borrador'}">${etiquetas[r.estado] || 'Sin confirmar'}</span>
+          <button class="btn-eliminar-nota" onclick="eliminarReserva(${r.id})">✕</button>
+        </div>
+      </div>
+      <div class="reserva-detalle">${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}${r.email ? ' · ' + r.email : ''}</div>
+      ${r.notas ? `<div class="reserva-notas">${r.notas}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function eliminarReserva(resId) {
+  if (!confirm('¿Eliminar esta reserva?')) return;
+  const clave = 'dot-reservas-' + eventoActual.id;
+  const reservas = JSON.parse(localStorage.getItem(clave) || '[]');
+  localStorage.setItem(clave, JSON.stringify(reservas.filter(r => r.id !== resId)));
+  renderizarReservas();
+  toast('Reserva eliminada');
+}
+
+// ── Movimientos ───────────────────────────────────
 
 function limpiarFormMovimiento() {
   document.getElementById('mov-concepto').value = '';
@@ -169,18 +226,13 @@ function actualizarMetricas() {
   const clave = 'dot-movimientos-' + eventoActual.id;
   const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
 
-  const gastado = movimientos
-    .filter(m => m.tipo === 'egreso')
-    .reduce((acc, m) => acc + m.monto, 0);
-
+  const gastado = movimientos.filter(m => m.tipo === 'egreso').reduce((acc, m) => acc + m.monto, 0);
   const saldo = (eventoActual.presupuesto || 0) - gastado;
 
   document.getElementById('ev-presupuesto').textContent = '$' + (eventoActual.presupuesto || 0).toLocaleString('es-AR');
   document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
   document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
-
-  const elSaldo = document.getElementById('ev-saldo');
-  elSaldo.style.color = saldo >= 0 ? '#1D9E75' : '#D85A30';
+  document.getElementById('ev-saldo').style.color = saldo >= 0 ? '#1D9E75' : '#D85A30';
 }
 
 function renderizarMovimientos() {
@@ -215,11 +267,13 @@ function eliminarMovimiento(movId) {
   if (!confirm('¿Eliminar este movimiento?')) return;
   const clave = 'dot-movimientos-' + eventoActual.id;
   const movimientos = JSON.parse(localStorage.getItem(clave) || '[]');
-  const nuevos = movimientos.filter(m => m.id !== movId);
-  localStorage.setItem(clave, JSON.stringify(nuevos));
+  localStorage.setItem(clave, JSON.stringify(movimientos.filter(m => m.id !== movId)));
   renderizarMovimientos();
   actualizarMetricas();
+  toast('Movimiento eliminado');
 }
+
+// ── Notas ─────────────────────────────────────────
 
 function renderizarNotas() {
   const clave = 'dot-notas-' + eventoActual.id;
@@ -246,7 +300,105 @@ function eliminarNota(notaId) {
   if (!confirm('¿Eliminar esta nota?')) return;
   const clave = 'dot-notas-' + eventoActual.id;
   const notas = JSON.parse(localStorage.getItem(clave) || '[]');
-  const nuevas = notas.filter(n => n.id !== notaId);
-  localStorage.setItem(clave, JSON.stringify(nuevas));
+  localStorage.setItem(clave, JSON.stringify(notas.filter(n => n.id !== notaId)));
   renderizarNotas();
+  toast('Nota eliminada');
+}
+
+// ── Exportar PDF ──────────────────────────────────
+
+function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const evento = eventoActual;
+  const fecha = new Date(evento.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const movimientos = JSON.parse(localStorage.getItem('dot-movimientos-' + evento.id) || '[]');
+  const reservas = JSON.parse(localStorage.getItem('dot-reservas-' + evento.id) || '[]');
+  const notas = JSON.parse(localStorage.getItem('dot-notas-' + evento.id) || '[]');
+
+  const gastado = movimientos.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
+  const saldo = (evento.presupuesto || 0) - gastado;
+
+  let y = 20;
+
+  // Título
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DOT Eventos', 20, y);
+  y += 10;
+
+  doc.setFontSize(14);
+  doc.text(evento.nombre, 20, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120);
+  doc.text(fecha + (evento.lugar ? ' · ' + evento.lugar : ''), 20, y);
+  y += 14;
+
+  // Línea separadora
+  doc.setDrawColor(200);
+  doc.line(20, y, 190, y);
+  y += 8;
+
+  // Métricas
+  doc.setTextColor(0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Resumen financiero', 20, y);
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text('Presupuesto: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 20, y); y += 6;
+  doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 20, y); y += 6;
+  doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 20, y); y += 12;
+
+  // Movimientos
+  if (movimientos.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Movimientos', 20, y); y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    movimientos.forEach(m => {
+      const signo = m.tipo === 'egreso' ? '-' : '+';
+      doc.text(`${m.concepto} — ${signo}$${m.monto.toLocaleString('es-AR')}`, 24, y); y += 6;
+      if (y > 270) { doc.addPage(); y = 20; }
+    });
+    y += 6;
+  }
+
+  // Reservas
+  if (reservas.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Reservas', 20, y); y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    reservas.forEach(r => {
+      doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 24, y); y += 6;
+      if (y > 270) { doc.addPage(); y = 20; }
+    });
+    y += 6;
+  }
+
+  // Notas
+  if (notas.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Notas', 20, y); y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    notas.forEach(n => {
+      doc.text(`${n.titulo}: ${n.texto || ''}`, 24, y); y += 6;
+      if (y > 270) { doc.addPage(); y = 20; }
+    });
+  }
+
+  doc.save(evento.nombre.replace(/ /g, '-') + '.pdf');
+  toast('PDF descargado');
 }

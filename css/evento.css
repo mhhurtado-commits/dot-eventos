@@ -26,10 +26,7 @@
   margin: 0 0 4px;
 }
 
-.evento-meta {
-  font-size: 13px;
-  color: #888;
-}
+.evento-meta { font-size: 13px; color: #888; }
 
 .tabs {
   display: flex;
@@ -52,12 +49,7 @@
 }
 
 .tab:hover { color: #7F77DD; }
-
-.tab.active {
-  color: #7F77DD;
-  border-bottom-color: #7F77DD;
-}
-
+.tab.active { color: #7F77DD; border-bottom-color: #7F77DD; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
@@ -66,6 +58,7 @@
   border-radius: 10px;
   border: 0.5px solid #e8e6f0;
   overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 .info-row {
@@ -77,17 +70,23 @@
 }
 
 .info-row:last-child { border-bottom: none; }
+.info-label { font-size: 13px; color: #888; }
+.info-value { font-size: 13px; font-weight: 500; color: #1a1a2e; }
 
-.info-label {
+.btn-exportar {
+  background: transparent;
+  border: 0.5px solid #7F77DD;
+  border-radius: 8px;
+  padding: 8px 16px;
   font-size: 13px;
-  color: #888;
+  color: #7F77DD;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
-.info-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1a1a2e;
-}
+.btn-exportar:hover { background: #f0eeff; }
 
 .section-header {
   display: flex;
@@ -96,39 +95,36 @@
   margin-bottom: 0.75rem;
 }
 
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
-}
+.btn-sm { padding: 6px 12px; font-size: 12px; }
 
-.reserva-list,
-.movimiento-list,
-.nota-list {
+.reserva-list, .movimiento-list, .nota-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.reserva-card,
-.movimiento-card,
-.nota-card {
+.reserva-card, .movimiento-card, .nota-card {
   background: #fff;
   border-radius: 10px;
   border: 0.5px solid #e8e6f0;
   padding: 1rem 1.25rem;
 }
 
+.reserva-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
 .reserva-nombre {
   font-size: 14px;
   font-weight: 500;
   color: #1a1a2e;
-  margin-bottom: 4px;
 }
 
-.reserva-detalle {
-  font-size: 12px;
-  color: #888;
-}
+.reserva-detalle { font-size: 12px; color: #888; margin-bottom: 4px; }
+.reserva-notas { font-size: 12px; color: #aaa; font-style: italic; margin-top: 4px; }
 
 .movimiento-row {
   display: flex;
@@ -136,25 +132,19 @@
   justify-content: space-between;
 }
 
-.movimiento-concepto {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1a1a2e;
-}
-
-.movimiento-monto {
-  font-size: 14px;
-  font-weight: 600;
-}
-
+.movimiento-concepto { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+.movimiento-monto { font-size: 14px; font-weight: 600; }
 .movimiento-monto.egreso { color: #D85A30; }
 .movimiento-monto.ingreso { color: #1D9E75; }
 
-.movimiento-fecha {
-  font-size: 12px;
-  color: #888;
-  margin-top: 4px;
+.movimiento-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
 }
+
+.movimiento-fecha { font-size: 12px; color: #888; }
 
 .nota-header {
   display: flex;
@@ -163,17 +153,8 @@
   margin-bottom: 6px;
 }
 
-.nota-titulo {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1a1a2e;
-}
-
-.nota-texto {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.6;
-}
+.nota-titulo { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+.nota-texto { font-size: 13px; color: #666; line-height: 1.6; }
 
 .btn-eliminar-nota {
   background: transparent;
@@ -204,9 +185,9 @@
   justify-content: flex-end;
   gap: 10px;
 }
-.movimiento-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
+
+@media (max-width: 480px) {
+  .tabs { overflow-x: auto; }
+  .tab { padding: 10px 12px; font-size: 12px; }
+  .evento-titulo { font-size: 16px; }
 }

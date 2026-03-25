@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agenda · DOT Eventos</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/agenda.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" onclick="window.location.href='/pages/dashboard'">← Volver</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+    <div class="db-header">
+      <div>
+        <div class="db-title">Agenda</div>
+        <div class="db-subtitle" id="mes-actual"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-logout" id="btn-prev">←</button>
+        <button class="btn-logout" id="btn-next">→</button>
+      </div>
+    </div>
+
+    <div class="calendario" id="calendario">
+      <div class="cal-header">
+        <span>Dom</span><span>Lun</span><span>Mar</span>
+        <span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <div class="db-section-title" style="margin-top:1.5rem;">Eventos del mes</div>
+    <div class="event-list" id="eventos-mes"></div>
+  </div>
+
+  <script src="../../js/agenda.js"></script>
+</body>
+</html>

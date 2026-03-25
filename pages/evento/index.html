@@ -67,6 +67,7 @@
       <button class="tab" data-tab="notas">Notas</button>
     </div>
 
+    <!-- Tab Info -->
     <div class="tab-content active" id="tab-info">
       <div class="info-card">
         <div class="info-row">
@@ -86,18 +87,39 @@
           <span class="info-value" id="info-estado">—</span>
         </div>
       </div>
+      <button class="btn-exportar" id="btn-exportar">⬇ Exportar a PDF</button>
     </div>
 
+    <!-- Tab Reservas -->
     <div class="tab-content" id="tab-reservas">
       <div class="section-header">
         <span class="db-section-title">Reservas</span>
-        <button class="btn-new btn-sm">+ Agregar</button>
+        <button class="btn-new btn-sm" id="btn-agregar-reserva">+ Agregar</button>
       </div>
+
+      <div class="form-nota" id="form-reserva" style="display:none;">
+        <input type="text" id="res-nombre" class="form-input" placeholder="Servicio (ej: Fotografía)" />
+        <input type="text" id="res-contacto" class="form-input" placeholder="Nombre del contacto" />
+        <input type="text" id="res-telefono" class="form-input" placeholder="Teléfono" />
+        <input type="text" id="res-email" class="form-input" placeholder="Email (opcional)" />
+        <select id="res-estado" class="form-input">
+          <option value="borrador">Sin confirmar</option>
+          <option value="progreso">En negociación</option>
+          <option value="confirmado">Confirmado</option>
+        </select>
+        <textarea id="res-notas" class="form-input form-textarea" placeholder="Notas adicionales..." style="min-height:70px;"></textarea>
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-reserva">Guardar reserva</button>
+        </div>
+      </div>
+
       <div class="reserva-list" id="reserva-list">
         <div class="event-empty">No hay reservas todavía.</div>
       </div>
     </div>
 
+    <!-- Tab Presupuesto -->
     <div class="tab-content" id="tab-presupuesto">
       <div class="section-header">
         <span class="db-section-title">Movimientos</span>
@@ -134,6 +156,7 @@
       </div>
     </div>
 
+    <!-- Tab Notas -->
     <div class="tab-content" id="tab-notas">
       <div class="section-header">
         <span class="db-section-title">Notas</span>
@@ -156,6 +179,7 @@
 
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="../../js/evento.js"></script>
 </body>
 </html>
