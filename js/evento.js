@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const idx = todosLosEventos.findIndex(e => e.id === evento.id);
   eventoActual = evento;
 
+  // Encabezado
   const color = colores[idx % colores.length];
   document.getElementById('evento-dot').style.background = color;
   document.getElementById('evento-titulo').textContent = evento.nombre;
@@ -44,23 +45,30 @@ document.addEventListener('DOMContentLoaded', () => {
   badge.textContent = etiquetas[evento.estado] || 'Borrador';
   badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
 
+  // Barra de progreso
+  renderizarProgreso(fecha);
+
+  // Info
   document.getElementById('info-nombre').textContent = evento.nombre;
   document.getElementById('info-fecha').textContent = fechaStr;
   document.getElementById('info-lugar').textContent = evento.lugar || '—';
   document.getElementById('info-estado').textContent = etiquetas[evento.estado] || 'Borrador';
 
+  // Reuniones
+  renderizarReunionesPreview();
+  document.getElementById('btn-ir-reuniones').addEventListener('click', () => {
+    window.location.href = '/pages/reuniones?id=' + eventoActual.id;
+  });
+
   // Reservas
   renderizarReservas();
-
   document.getElementById('btn-agregar-reserva').addEventListener('click', () => {
     document.getElementById('form-reserva').style.display = 'flex';
   });
-
   document.getElementById('btn-cancelar-reserva').addEventListener('click', () => {
     document.getElementById('form-reserva').style.display = 'none';
     limpiarFormReserva();
   });
-
   document.getElementById('btn-guardar-reserva').addEventListener('click', () => {
     const nombre = document.getElementById('res-nombre').value.trim();
     const contacto = document.getElementById('res-contacto').value.trim();
@@ -91,12 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('form-movimiento').style.display = 'flex';
     document.getElementById('mov-fecha').valueAsDate = new Date();
   });
-
   document.getElementById('btn-cancelar-movimiento').addEventListener('click', () => {
     document.getElementById('form-movimiento').style.display = 'none';
     limpiarFormMovimiento();
   });
-
   document.getElementById('btn-guardar-movimiento').addEventListener('click', () => {
     const concepto = document.getElementById('mov-concepto').value.trim();
     const tipo = document.getElementById('mov-tipo').value;
@@ -121,31 +127,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Notas
   renderizarNotas();
-
   document.getElementById('btn-agregar-nota').addEventListener('click', () => {
     document.getElementById('form-nota').style.display = 'flex';
   });
-
   document.getElementById('btn-cancelar-nota').addEventListener('click', () => {
     document.getElementById('form-nota').style.display = 'none';
     document.getElementById('nota-titulo-input').value = '';
     document.getElementById('nota-texto-input').value = '';
+    document.getElementById('nota-imagen-input').value = '';
+    document.getElementById('nota-audio-input').value = '';
   });
-
-  document.getElementById('btn-guardar-nota').addEventListener('click', () => {
+  document.getElementById('btn-guardar-nota').addEventListener('click', async () => {
     const titulo = document.getElementById('nota-titulo-input').value.trim();
     const texto = document.getElementById('nota-texto-input').value.trim();
+    const imagenInput = document.getElementById('nota-imagen-input');
+    const audioInput = document.getElementById('nota-audio-input');
 
     if (!titulo) { toast('Por favor ingresá un título.', 'error'); return; }
 
+    let imagenData = null;
+    let audioData = null;
+
+    if (imagenInput.files[0]) {
+      imagenData = await fileToBase64(imagenInput.files[0]);
+    }
+    if (audioInput.files[0]) {
+      const audioBase64 = await fileToBase64(audioInput.files[0]);
+      audioData = { url: audioBase64, nombre: audioInput.files[0].name };
+    }
+
     const clave = 'dot-notas-' + eventoActual.id;
     const notas = JSON.parse(localStorage.getItem(clave) || '[]');
-    notas.push({ id: Date.now(), titulo, texto });
+    notas.push({ id: Date.now(), titulo, texto, imagen: imagenData, audio: audioData });
     localStorage.setItem(clave, JSON.stringify(notas));
 
     document.getElementById('form-nota').style.display = 'none';
     document.getElementById('nota-titulo-input').value = '';
     document.getElementById('nota-texto-input').value = '';
+    document.getElementById('nota-imagen-input').value = '';
+    document.getElementById('nota-audio-input').value = '';
     renderizarNotas();
     toast('Nota guardada');
   });
@@ -165,15 +185,81 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = '/pages/editar-evento?id=' + evento.id;
   });
 
-  // Exportar PDF
+  // PDF
   document.getElementById('btn-exportar').addEventListener('click', () => exportarPDF());
 
 });
 
+// ── Progreso ──────────────────────────────────────
+
+function renderizarProgreso(fechaEvento) {
+  const hoy = new Date();
+  const diasRestantes = Math.ceil((fechaEvento - hoy) / (1000 * 60 * 60 * 24));
+
+  if (diasRestantes < 0) {
+    document.getElementById('progreso-wrapper').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('progreso-dias').textContent = diasRestantes === 0 ? '¡Hoy!' : diasRestantes + ' días restantes';
+  document.getElementById('progreso-label').textContent = 'Cuenta regresiva';
+
+  const totalDias = 365;
+  const porcentaje = Math.max(0, Math.min(100, 100 - (diasRestantes / totalDias * 100)));
+  document.getElementById('progreso-fill').style.width = porcentaje + '%';
+
+  if (diasRestantes <= 7) {
+    document.getElementById('progreso-fill').style.background = '#D85A30';
+  } else if (diasRestantes <= 30) {
+    document.getElementById('progreso-fill').style.background = '#EF9F27';
+  }
+}
+
+// ── Reuniones preview ─────────────────────────────
+
+function renderizarReunionesPreview() {
+  const clave = 'dot-reuniones-' + eventoActual.id;
+  const reuniones = JSON.parse(localStorage.getItem(clave) || '[]');
+  const lista = document.getElementById('reunion-preview');
+
+  if (reuniones.length === 0) {
+    lista.innerHTML = `<div class="event-empty">No hay reuniones. <a href="/pages/reuniones?id=${eventoActual.id}" style="color:#7F77DD;">Agregar</a></div>`;
+    return;
+  }
+
+  const hoy = new Date().toISOString().split('T')[0];
+  const proximas = reuniones
+    .filter(r => r.fecha >= hoy)
+    .sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora))
+    .slice(0, 3);
+
+  if (proximas.length === 0) {
+    lista.innerHTML = `<div class="event-empty">No hay reuniones próximas. <a href="/pages/reuniones?id=${eventoActual.id}" style="color:#7F77DD;">Ver todas</a></div>`;
+    return;
+  }
+
+  lista.innerHTML = proximas.map(r => {
+    const fecha = new Date(r.fecha + 'T' + r.hora);
+    const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+    const horaStr = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const esHoy = r.fecha === hoy;
+
+    return `
+      <div class="reunion-card ${esHoy ? 'hoy' : ''}" onclick="window.location.href='/pages/reuniones?id=${eventoActual.id}'">
+        <div class="reunion-header">
+          <div class="reunion-titulo">${r.titulo}</div>
+          ${esHoy ? '<span class="reunion-hoy-tag">Hoy</span>' : ''}
+        </div>
+        <div class="reunion-fecha">${fechaStr} · ${horaStr}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
 // ── Reservas ──────────────────────────────────────
 
 function limpiarFormReserva() {
-  ['res-nombre','res-contacto','res-telefono','res-email','res-notas'].forEach(id => {
+  ['res-nombre', 'res-contacto', 'res-telefono', 'res-email', 'res-notas'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('res-estado').value = 'borrador';
@@ -275,6 +361,15 @@ function eliminarMovimiento(movId) {
 
 // ── Notas ─────────────────────────────────────────
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function renderizarNotas() {
   const clave = 'dot-notas-' + eventoActual.id;
   const notas = JSON.parse(localStorage.getItem(clave) || '[]');
@@ -291,7 +386,14 @@ function renderizarNotas() {
         <div class="nota-titulo">${n.titulo}</div>
         <button class="btn-eliminar-nota" onclick="eliminarNota(${n.id})">✕</button>
       </div>
-      <div class="nota-texto">${n.texto || '—'}</div>
+      ${n.texto ? `<div class="nota-texto">${n.texto}</div>` : ''}
+      ${n.imagen ? `<img src="${n.imagen}" class="nota-imagen" onclick="verImagen('${n.imagen}')" />` : ''}
+      ${n.audio ? `
+        <div class="nota-audio">
+          <span class="nota-audio-nombre">🎵 ${n.audio.nombre}</span>
+          <audio controls src="${n.audio.url}" style="width:100%;margin-top:6px;"></audio>
+        </div>
+      ` : ''}
     </div>
   `).join('');
 }
@@ -305,96 +407,96 @@ function eliminarNota(notaId) {
   toast('Nota eliminada');
 }
 
-// ── Exportar PDF ──────────────────────────────────
+function verImagen(src) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;';
+  overlay.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:8px;" />`;
+  overlay.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+}
+
+// ── PDF ───────────────────────────────────────────
 
 function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-
   const evento = eventoActual;
   const fecha = new Date(evento.fecha).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   const movimientos = JSON.parse(localStorage.getItem('dot-movimientos-' + evento.id) || '[]');
   const reservas = JSON.parse(localStorage.getItem('dot-reservas-' + evento.id) || '[]');
   const notas = JSON.parse(localStorage.getItem('dot-notas-' + evento.id) || '[]');
-
+  const reuniones = JSON.parse(localStorage.getItem('dot-reuniones-' + evento.id) || '[]');
   const gastado = movimientos.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
   const saldo = (evento.presupuesto || 0) - gastado;
 
   let y = 20;
 
-  // Título
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('DOT Eventos', 20, y);
-  y += 10;
+  doc.text('DOT Eventos', 20, y); y += 10;
 
   doc.setFontSize(14);
-  doc.text(evento.nombre, 20, y);
-  y += 8;
+  doc.text(evento.nombre, 20, y); y += 8;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(120);
-  doc.text(fecha + (evento.lugar ? ' · ' + evento.lugar : ''), 20, y);
-  y += 14;
+  doc.text(fecha + (evento.lugar ? ' · ' + evento.lugar : ''), 20, y); y += 14;
 
-  // Línea separadora
   doc.setDrawColor(200);
-  doc.line(20, y, 190, y);
-  y += 8;
+  doc.line(20, y, 190, y); y += 8;
 
-  // Métricas
   doc.setTextColor(0);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('Resumen financiero', 20, y);
-  y += 8;
-
+  doc.text('Resumen financiero', 20, y); y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.text('Presupuesto: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 20, y); y += 6;
   doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 20, y); y += 6;
   doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 20, y); y += 12;
 
-  // Movimientos
+  if (reuniones.length > 0) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+    doc.text('Reuniones', 20, y); y += 8;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    reuniones.forEach(r => {
+      doc.text(`${r.fecha} ${r.hora} — ${r.titulo}${r.lugar ? ' · ' + r.lugar : ''}`, 24, y); y += 6;
+      if (y > 270) { doc.addPage(); y = 20; }
+    });
+    y += 4;
+  }
+
   if (movimientos.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
     doc.text('Movimientos', 20, y); y += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     movimientos.forEach(m => {
       const signo = m.tipo === 'egreso' ? '-' : '+';
       doc.text(`${m.concepto} — ${signo}$${m.monto.toLocaleString('es-AR')}`, 24, y); y += 6;
       if (y > 270) { doc.addPage(); y = 20; }
     });
-    y += 6;
+    y += 4;
   }
 
-  // Reservas
   if (reservas.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
     doc.text('Reservas', 20, y); y += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     reservas.forEach(r => {
       doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 24, y); y += 6;
       if (y > 270) { doc.addPage(); y = 20; }
     });
-    y += 6;
+    y += 4;
   }
 
-  // Notas
   if (notas.length > 0) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
     doc.text('Notas', 20, y); y += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     notas.forEach(n => {
-      doc.text(`${n.titulo}: ${n.texto || ''}`, 24, y); y += 6;
+      doc.text(`${n.titulo}${n.texto ? ': ' + n.texto : ''}`, 24, y); y += 6;
       if (y > 270) { doc.addPage(); y = 20; }
     });
   }

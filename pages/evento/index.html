@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/dashboard.css" />
   <link rel="stylesheet" href="../../css/evento.css" />
+  <link rel="stylesheet" href="../../css/reuniones.css" />
 </head>
 <body class="db-body-page">
 
@@ -42,6 +43,17 @@
       <span class="event-badge" id="evento-badge"></span>
     </div>
 
+    <!-- Barra de progreso -->
+    <div class="progreso-wrapper" id="progreso-wrapper">
+      <div class="progreso-info">
+        <span class="progreso-label" id="progreso-label">—</span>
+        <span class="progreso-dias" id="progreso-dias">—</span>
+      </div>
+      <div class="progreso-bar">
+        <div class="progreso-fill" id="progreso-fill"></div>
+      </div>
+    </div>
+
     <div class="db-metrics">
       <div class="metric">
         <div class="metric-label">Presupuesto</div>
@@ -62,6 +74,7 @@
 
     <div class="tabs">
       <button class="tab active" data-tab="info">Información</button>
+      <button class="tab" data-tab="reuniones">Reuniones</button>
       <button class="tab" data-tab="reservas">Reservas</button>
       <button class="tab" data-tab="presupuesto">Presupuesto</button>
       <button class="tab" data-tab="notas">Notas</button>
@@ -88,6 +101,17 @@
         </div>
       </div>
       <button class="btn-exportar" id="btn-exportar">⬇ Exportar a PDF</button>
+    </div>
+
+    <!-- Tab Reuniones -->
+    <div class="tab-content" id="tab-reuniones">
+      <div class="section-header">
+        <span class="db-section-title">Próximas reuniones</span>
+        <button class="btn-new btn-sm" id="btn-ir-reuniones">Ver todas →</button>
+      </div>
+      <div class="reunion-preview" id="reunion-preview">
+        <div class="event-empty">No hay reuniones todavía.</div>
+      </div>
     </div>
 
     <!-- Tab Reservas -->
@@ -166,6 +190,14 @@
       <div class="form-nota" id="form-nota" style="display:none;">
         <input type="text" id="nota-titulo-input" class="form-input" placeholder="Título de la nota" />
         <textarea id="nota-texto-input" class="form-input form-textarea" placeholder="Escribí tu nota acá..."></textarea>
+        <div class="form-group">
+          <label class="form-label">Imagen (opcional)</label>
+          <input type="file" id="nota-imagen-input" class="form-input" accept="image/*" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Audio (mp3, m4a, ogg)</label>
+          <input type="file" id="nota-audio-input" class="form-input" accept="audio/*" />
+        </div>
         <div class="form-nota-actions">
           <button class="btn-cancel" id="btn-cancelar-nota">Cancelar</button>
           <button class="btn-new" id="btn-guardar-nota">Guardar nota</button>

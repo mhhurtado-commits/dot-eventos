@@ -1,0 +1,68 @@
+.reunion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reunion-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 0.5px solid #e8e6f0;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.reunion-card.hoy {
+  border-color: #7F77DD;
+  background: #faf9ff;
+}
+
+.reunion-card.pasada { opacity: 0.6; }
+
+.reunion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.reunion-titulo {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.reunion-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.reunion-fecha { font-size: 12px; color: #888; }
+.reunion-lugar { font-size: 12px; color: #888; }
+
+.reunion-hoy-tag {
+  font-size: 11px;
+  font-weight: 500;
+  background: #7F77DD;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.reunion-descripcion {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 0.5px solid #f0eeff;
+}
+
+.reunion-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

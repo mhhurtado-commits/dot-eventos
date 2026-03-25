@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   actualizarMetricas(todosLosEventos);
   renderizarEventos(todosLosEventos);
+  verificarReunionesDeDia();
 
   // Búsqueda
   document.getElementById('search-input').addEventListener('input', (e) => {
@@ -83,16 +84,8 @@ function renderizarEventos(eventos) {
   }
 
   const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-  const badges = {
-    confirmado: 'badge-confirmado',
-    progreso: 'badge-progreso',
-    borrador: 'badge-borrador'
-  };
-  const etiquetas = {
-    confirmado: 'Confirmado',
-    progreso: 'En progreso',
-    borrador: 'Borrador'
-  };
+  const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
+  const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
 
   eventos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
@@ -123,4 +116,36 @@ function renderizarEventos(eventos) {
       </div>
     `;
   }).join('');
+}
+
+function verificarReunionesDeDia() {
+  if (!('Notification' in window)) return;
+
+  const hoy = new Date().toISOString().split('T')[0];
+  const clavesReuniones = Object.keys(localStorage).filter(k => k.startsWith('dot-reuniones-'));
+
+  const reunionesHoy = [];
+  clavesReuniones.forEach(clave => {
+    const reuniones = JSON.parse(localStorage.getItem(clave) || '[]');
+    reuniones.forEach(r => { if (r.fecha === hoy) reunionesHoy.push(r); });
+  });
+
+  if (reunionesHoy.length === 0) return;
+
+  reunionesHoy.sort((a, b) => a.hora.localeCompare(b.hora));
+
+  if (Notification.permission === 'granted') {
+    const resumen = reunionesHoy.map(r => `• ${r.hora} — ${r.titulo}`).join('\n');
+    new Notification('DOT Eventos — Reuniones de hoy', { body: resumen });
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'banner-reuniones';
+  banner.innerHTML = `
+    <div class="banner-titulo">📅 Reuniones de hoy (${reunionesHoy.length})</div>
+    <div class="banner-lista">${reunionesHoy.map(r => `<span>${r.hora} — ${r.titulo}</span>`).join('')}</div>
+    <button onclick="this.parentElement.remove()" class="banner-cerrar">✕</button>
+  `;
+  const content = document.querySelector('.db-content');
+  if (content) content.prepend(banner);
 }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reuniones · DOT Eventos</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/reuniones.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" id="btn-volver">← Volver</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+    <div class="db-header">
+      <div>
+        <div class="db-title">Reuniones</div>
+        <div class="db-subtitle" id="evento-subtitulo">Cargando...</div>
+      </div>
+      <button class="btn-new" id="btn-agregar">+ Nueva reunión</button>
+    </div>
+
+    <div class="form-nota" id="form-reunion" style="display:none;">
+      <input type="text" id="reu-titulo" class="form-input" placeholder="Título de la reunión" />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input type="date" id="reu-fecha" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora</label>
+          <input type="time" id="reu-hora" class="form-input" />
+        </div>
+      </div>
+      <input type="text" id="reu-lugar" class="form-input" placeholder="Lugar (opcional)" />
+      <textarea id="reu-descripcion" class="form-input form-textarea" placeholder="Descripción o agenda de la reunión..."></textarea>
+      <div class="form-nota-actions">
+        <button class="btn-cancel" id="btn-cancelar">Cancelar</button>
+        <button class="btn-new" id="btn-guardar">Guardar reunión</button>
+      </div>
+    </div>
+
+    <div class="reunion-list" id="reunion-list">
+      <div class="event-empty">No hay reuniones todavía.</div>
+    </div>
+  </div>
+
+  <script src="../../js/reuniones.js"></script>
+</body>
+</html>

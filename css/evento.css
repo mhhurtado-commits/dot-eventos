@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   gap: 1rem;
 }
 
@@ -28,17 +28,58 @@
 
 .evento-meta { font-size: 13px; color: #888; }
 
+/* Progreso */
+.progreso-wrapper {
+  background: #fff;
+  border-radius: 10px;
+  border: 0.5px solid #e8e6f0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.progreso-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progreso-label { font-size: 12px; color: #888; }
+
+.progreso-dias {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7F77DD;
+}
+
+.progreso-bar {
+  width: 100%;
+  height: 6px;
+  background: #f0eeff;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progreso-fill {
+  height: 100%;
+  background: #7F77DD;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* Tabs */
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 0;
   margin-bottom: 1.25rem;
   border-bottom: 0.5px solid #e8e6f0;
+  overflow-x: auto;
 }
 
 .tab {
   background: transparent;
   border: none;
-  padding: 10px 16px;
+  padding: 10px 14px;
   font-size: 13px;
   font-weight: 500;
   color: #888;
@@ -46,6 +87,7 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .tab:hover { color: #7F77DD; }
@@ -53,6 +95,7 @@
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
+/* Info */
 .info-card {
   background: #fff;
   border-radius: 10px;
@@ -88,6 +131,7 @@
 
 .btn-exportar:hover { background: #f0eeff; }
 
+/* Secciones */
 .section-header {
   display: flex;
   align-items: center;
@@ -97,12 +141,13 @@
 
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 
-.reserva-list, .movimiento-list, .nota-list {
+.reserva-list, .movimiento-list, .nota-list, .reunion-preview {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* Reservas */
 .reserva-card, .movimiento-card, .nota-card {
   background: #fff;
   border-radius: 10px;
@@ -117,15 +162,11 @@
   margin-bottom: 6px;
 }
 
-.reserva-nombre {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1a1a2e;
-}
-
+.reserva-nombre { font-size: 14px; font-weight: 500; color: #1a1a2e; }
 .reserva-detalle { font-size: 12px; color: #888; margin-bottom: 4px; }
 .reserva-notas { font-size: 12px; color: #aaa; font-style: italic; margin-top: 4px; }
 
+/* Movimientos */
 .movimiento-row {
   display: flex;
   align-items: center;
@@ -146,6 +187,7 @@
 
 .movimiento-fecha { font-size: 12px; color: #888; }
 
+/* Notas */
 .nota-header {
   display: flex;
   align-items: center;
@@ -156,6 +198,32 @@
 .nota-titulo { font-size: 14px; font-weight: 500; color: #1a1a2e; }
 .nota-texto { font-size: 13px; color: #666; line-height: 1.6; }
 
+.nota-imagen {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.nota-imagen:hover { opacity: 0.9; }
+
+.nota-audio {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f4f3ff;
+  border-radius: 8px;
+}
+
+.nota-audio-nombre {
+  font-size: 12px;
+  color: #534AB7;
+  font-weight: 500;
+}
+
+/* Botones */
 .btn-eliminar-nota {
   background: transparent;
   border: none;
@@ -186,8 +254,41 @@
   gap: 10px;
 }
 
+/* Reuniones dentro del evento */
+.reunion-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 0.5px solid #e8e6f0;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.reunion-card:hover { border-color: #7F77DD; }
+.reunion-card.hoy { border-color: #7F77DD; background: #faf9ff; }
+.reunion-card.pasada { opacity: 0.6; }
+
+.reunion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.reunion-titulo { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+.reunion-fecha { font-size: 12px; color: #888; }
+
+.reunion-hoy-tag {
+  font-size: 11px;
+  font-weight: 500;
+  background: #7F77DD;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
 @media (max-width: 480px) {
   .tabs { overflow-x: auto; }
-  .tab { padding: 10px 12px; font-size: 12px; }
+  .tab { padding: 10px 10px; font-size: 12px; }
   .evento-titulo { font-size: 16px; }
 }
