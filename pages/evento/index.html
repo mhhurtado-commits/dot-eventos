@@ -43,10 +43,9 @@
       <span class="event-badge" id="evento-badge"></span>
     </div>
 
-    <!-- Barra de progreso -->
     <div class="progreso-wrapper" id="progreso-wrapper">
       <div class="progreso-info">
-        <span class="progreso-label" id="progreso-label">—</span>
+        <span class="progreso-label">Cuenta regresiva</span>
         <span class="progreso-dias" id="progreso-dias">—</span>
       </div>
       <div class="progreso-bar">
@@ -73,54 +72,45 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="info">Información</button>
+      <button class="tab active" data-tab="info">Info</button>
       <button class="tab" data-tab="reuniones">Reuniones</button>
       <button class="tab" data-tab="reservas">Reservas</button>
       <button class="tab" data-tab="presupuesto">Presupuesto</button>
       <button class="tab" data-tab="notas">Notas</button>
     </div>
 
-    <!-- Tab Info -->
     <div class="tab-content active" id="tab-info">
       <div class="info-card">
-        <div class="info-row">
-          <span class="info-label">Nombre</span>
-          <span class="info-value" id="info-nombre">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Fecha</span>
-          <span class="info-value" id="info-fecha">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Lugar</span>
-          <span class="info-value" id="info-lugar">—</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Estado</span>
-          <span class="info-value" id="info-estado">—</span>
-        </div>
+        <div class="info-row"><span class="info-label">Tipo</span><span class="info-value" id="info-tipo">—</span></div>
+        <div class="info-row"><span class="info-label">Nombre</span><span class="info-value" id="info-nombre">—</span></div>
+        <div class="info-row"><span class="info-label">Fecha</span><span class="info-value" id="info-fecha">—</span></div>
+        <div class="info-row"><span class="info-label">Lugar</span><span class="info-value" id="info-lugar">—</span></div>
+        <div class="info-row"><span class="info-label">Estado</span><span class="info-value" id="info-estado">—</span></div>
+      </div>
+      <div class="info-card" style="margin-top:1rem;">
+        <div class="info-row"><span class="info-label">Contacto</span><span class="info-value" id="info-contacto">—</span></div>
+        <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value" id="info-telefono">—</span></div>
+        <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="info-email">—</span></div>
+        <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="info-direccion">—</span></div>
       </div>
       <button class="btn-exportar" id="btn-exportar">⬇ Exportar a PDF</button>
     </div>
 
-    <!-- Tab Reuniones -->
     <div class="tab-content" id="tab-reuniones">
       <div class="section-header">
         <span class="db-section-title">Próximas reuniones</span>
         <button class="btn-new btn-sm" id="btn-ir-reuniones">Ver todas →</button>
       </div>
       <div class="reunion-preview" id="reunion-preview">
-        <div class="event-empty">No hay reuniones todavía.</div>
+        <div class="event-empty">Cargando...</div>
       </div>
     </div>
 
-    <!-- Tab Reservas -->
     <div class="tab-content" id="tab-reservas">
       <div class="section-header">
         <span class="db-section-title">Reservas</span>
         <button class="btn-new btn-sm" id="btn-agregar-reserva">+ Agregar</button>
       </div>
-
       <div class="form-nota" id="form-reserva" style="display:none;">
         <input type="text" id="res-nombre" class="form-input" placeholder="Servicio (ej: Fotografía)" />
         <input type="text" id="res-contacto" class="form-input" placeholder="Nombre del contacto" />
@@ -137,19 +127,14 @@
           <button class="btn-new" id="btn-guardar-reserva">Guardar reserva</button>
         </div>
       </div>
-
-      <div class="reserva-list" id="reserva-list">
-        <div class="event-empty">No hay reservas todavía.</div>
-      </div>
+      <div class="reserva-list" id="reserva-list"><div class="event-empty">Cargando...</div></div>
     </div>
 
-    <!-- Tab Presupuesto -->
     <div class="tab-content" id="tab-presupuesto">
       <div class="section-header">
         <span class="db-section-title">Movimientos</span>
         <button class="btn-new btn-sm" id="btn-agregar-movimiento">+ Agregar</button>
       </div>
-
       <div class="form-nota" id="form-movimiento" style="display:none;">
         <input type="text" id="mov-concepto" class="form-input" placeholder="Concepto (ej: Seña fotografía)" />
         <div class="form-row">
@@ -174,19 +159,14 @@
           <button class="btn-new" id="btn-guardar-movimiento">Guardar movimiento</button>
         </div>
       </div>
-
-      <div class="movimiento-list" id="movimiento-list">
-        <div class="event-empty">No hay movimientos todavía.</div>
-      </div>
+      <div class="movimiento-list" id="movimiento-list"><div class="event-empty">Cargando...</div></div>
     </div>
 
-    <!-- Tab Notas -->
     <div class="tab-content" id="tab-notas">
       <div class="section-header">
         <span class="db-section-title">Notas</span>
         <button class="btn-new btn-sm" id="btn-agregar-nota">+ Agregar</button>
       </div>
-
       <div class="form-nota" id="form-nota" style="display:none;">
         <input type="text" id="nota-titulo-input" class="form-input" placeholder="Título de la nota" />
         <textarea id="nota-texto-input" class="form-input form-textarea" placeholder="Escribí tu nota acá..."></textarea>
@@ -203,15 +183,14 @@
           <button class="btn-new" id="btn-guardar-nota">Guardar nota</button>
         </div>
       </div>
-
-      <div class="nota-list" id="nota-list">
-        <div class="event-empty">No hay notas todavía.</div>
-      </div>
+      <div class="nota-list" id="nota-list"><div class="event-empty">Cargando...</div></div>
     </div>
 
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase.js"></script>
   <script src="../../js/evento.js"></script>
 </body>
 </html>

@@ -112,3 +112,13 @@
   .form-row { grid-template-columns: 1fr; }
   .form-card { padding: 1rem; }
 }
+.form-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7F77DD;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid #e8e6f0;
+  margin-bottom: 0.25rem;
+}

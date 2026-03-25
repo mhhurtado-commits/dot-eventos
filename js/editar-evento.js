@@ -1,79 +1,70 @@
-const eventosPrueba = [
-  { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000, notas: '' },
-  { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000, notas: '' },
-  { id: 3, nombre: 'Reunión corporativa TechCorp', fecha: '2026-05-10', lugar: 'Hotel Diplomático', estado: 'progreso', presupuesto: 210000, notas: '' },
-  { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000, notas: '' }
-];
+let eventoId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '/'; return; }
 
   const params = new URLSearchParams(window.location.search);
-  const id = parseInt(params.get('id'));
+  eventoId = params.get('id');
 
-  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-  const todosLosEventos = [...eventosPrueba, ...eventosGuardados];
-  const evento = todosLosEventos.find(e => e.id === id);
+  const { data: evento, error } = await supabaseClient
+    .from('eventos').select('*').eq('id', eventoId).single();
 
-  if (!evento) {
-    alert('Evento no encontrado.');
-    window.location.href = '/pages/dashboard';
-    return;
-  }
-
-  document.getElementById('btn-volver').addEventListener('click', () => {
-    window.location.href = '/pages/evento?id=' + id;
-  });
-
-  document.getElementById('btn-cancelar').addEventListener('click', () => {
-    window.location.href = '/pages/evento?id=' + id;
-  });
+  if (error || !evento) { alert('Evento no encontrado.'); window.location.href = '/pages/dashboard'; return; }
 
   document.getElementById('subtitulo').textContent = evento.nombre;
+  document.getElementById('tipo').value = evento.tipo || 'otro';
   document.getElementById('nombre').value = evento.nombre;
   document.getElementById('fecha').value = evento.fecha;
   document.getElementById('estado').value = evento.estado;
   document.getElementById('lugar').value = evento.lugar || '';
   document.getElementById('presupuesto').value = evento.presupuesto || '';
   document.getElementById('notas').value = evento.notas || '';
+  document.getElementById('contacto_nombre').value = evento.contacto_nombre || '';
+  document.getElementById('contacto_telefono').value = evento.contacto_telefono || '';
+  document.getElementById('contacto_email').value = evento.contacto_email || '';
+  document.getElementById('contacto_direccion').value = evento.contacto_direccion || '';
 
-  document.getElementById('btn-guardar').addEventListener('click', () => {
+  document.getElementById('btn-volver').addEventListener('click', () => {
+    window.location.href = '/pages/evento?id=' + eventoId;
+  });
 
+  document.getElementById('btn-cancelar').addEventListener('click', () => {
+    window.location.href = '/pages/evento?id=' + eventoId;
+  });
+
+  document.getElementById('btn-guardar').addEventListener('click', async () => {
     const nombre = document.getElementById('nombre').value.trim();
+    const tipo = document.getElementById('tipo').value;
     const fecha = document.getElementById('fecha').value;
     const estado = document.getElementById('estado').value;
     const lugar = document.getElementById('lugar').value.trim();
     const presupuesto = parseFloat(document.getElementById('presupuesto').value) || 0;
     const notas = document.getElementById('notas').value.trim();
+    const contacto_nombre = document.getElementById('contacto_nombre').value.trim();
+    const contacto_telefono = document.getElementById('contacto_telefono').value.trim();
+    const contacto_email = document.getElementById('contacto_email').value.trim();
+    const contacto_direccion = document.getElementById('contacto_direccion').value.trim();
 
-    if (!nombre) {
-      alert('Por favor ingresá el nombre del evento.');
-      return;
-    }
-    if (!fecha) {
-      alert('Por favor seleccioná una fecha.');
-      return;
-    }
+    if (!nombre) { alert('Por favor ingresá el nombre del evento.'); return; }
+    if (!fecha) { alert('Por favor seleccioná una fecha.'); return; }
+    if (!contacto_nombre) { alert('Por favor ingresá el nombre del contacto.'); return; }
+    if (!contacto_telefono) { alert('Por favor ingresá el teléfono del contacto.'); return; }
 
-    const eventosLS = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-    const idx = eventosLS.findIndex(e => e.id === id);
+    const { error } = await supabaseClient.from('eventos').update({
+      nombre, tipo, fecha, estado, lugar, presupuesto, notas,
+      contacto_nombre, contacto_telefono, contacto_email, contacto_direccion
+    }).eq('id', eventoId);
 
-    if (idx !== -1) {
-      eventosLS[idx] = { ...eventosLS[idx], nombre, fecha, estado, lugar, presupuesto, notas };
-      localStorage.setItem('dot-eventos', JSON.stringify(eventosLS));
-    }
-
-    alert('¡Cambios guardados!');
-    window.location.href = '/pages/evento?id=' + id;
+    if (error) { alert('Error al guardar: ' + error.message); return; }
+    window.location.href = '/pages/evento?id=' + eventoId;
   });
 
-  document.getElementById('btn-eliminar').addEventListener('click', () => {
-    if (!confirm('¿Estás seguro que querés eliminar este evento?')) return;
-
-    const eventosLS = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-    const nuevosEventos = eventosLS.filter(e => e.id !== id);
-    localStorage.setItem('dot-eventos', JSON.stringify(nuevosEventos));
-
-    alert('Evento eliminado.');
+  document.getElementById('btn-eliminar').addEventListener('click', async () => {
+    if (!confirm('¿Eliminar este evento? Esta acción no se puede deshacer.')) return;
+    const { error } = await supabaseClient.from('eventos').delete().eq('id', eventoId);
+    if (error) { alert('Error al eliminar: ' + error.message); return; }
     window.location.href = '/pages/dashboard';
   });
 

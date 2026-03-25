@@ -23,35 +23,37 @@
       <span class="db-nav-name">DOT</span>
     </div>
     <div class="db-nav-right">
+      <button class="btn-agenda" onclick="window.location.href='/pages/agenda'">📅 Agenda</button>
       <div class="db-avatar" id="user-avatar">MH</div>
       <button class="btn-logout" id="btn-logout">Salir</button>
     </div>
   </nav>
 
   <div class="db-content">
+
     <div class="db-header">
       <div>
         <div class="db-title">Mis eventos</div>
         <div class="db-subtitle" id="user-greeting">Bienvenido</div>
       </div>
       <button class="btn-new" id="btn-nuevo">+ Nuevo evento</button>
-    </div> <button class="btn-agenda" onclick="window.location.href='/pages/agenda'">📅 Agenda</button>
+    </div>
 
     <div class="db-metrics">
       <div class="metric">
         <div class="metric-label">Eventos activos</div>
-        <div class="metric-value" id="metric-activos">0</div>
-        <div class="metric-sub">Este mes</div>
+        <div class="metric-value" id="metric-activos">—</div>
+        <div class="metric-sub">próximos</div>
       </div>
       <div class="metric">
         <div class="metric-label">Próximo evento</div>
         <div class="metric-value metric-value-sm" id="metric-proximo">—</div>
-        <div class="metric-sub" id="metric-proximo-nombre">Sin eventos</div>
+        <div class="metric-sub" id="metric-proximo-nombre">—</div>
       </div>
-      <div class="metric">
-        <div class="metric-label">Presupuesto total</div>
-        <div class="metric-value metric-value-sm" id="metric-presupuesto">$0</div>
-        <div class="metric-sub" id="metric-presupuesto-sub">0 eventos</div>
+      <div class="metric" style="cursor:pointer;" onclick="window.location.href='/pages/agenda'">
+        <div class="metric-label">Reuniones hoy</div>
+        <div class="metric-value" id="metric-reuniones">—</div>
+        <div class="metric-sub" id="metric-reuniones-sub">Ver agenda →</div>
       </div>
     </div>
 
@@ -69,8 +71,9 @@
 
     <div class="db-section-title">Próximos eventos</div>
     <div class="event-list" id="event-list">
-      <div class="event-empty">Todavía no tenés eventos. ¡Creá el primero!</div>
+      <div class="event-empty">Cargando eventos...</div>
     </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

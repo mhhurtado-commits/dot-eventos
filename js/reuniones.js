@@ -1,10 +1,3 @@
-const eventosPrueba = [
-  { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
-  { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
-  { id: 3, nombre: 'Reunión corporativa TechCorp', fecha: '2026-05-10', lugar: 'Hotel Diplomático', estado: 'progreso', presupuesto: 210000 },
-  { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
-];
-
 let eventoActual = null;
 
 function toast(msg, tipo = 'success') {
@@ -16,19 +9,22 @@ function toast(msg, tipo = 'success') {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { window.location.href = '/'; return; }
 
   const params = new URLSearchParams(window.location.search);
-  const id = parseInt(params.get('id'));
+  const id = params.get('id');
 
-  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-  const todos = [...eventosPrueba, ...eventosGuardados];
-  eventoActual = todos.find(e => e.id === id) || eventosPrueba[0];
+  const { data: evento } = await supabaseClient
+    .from('eventos').select('*').eq('id', id).single();
 
-  document.getElementById('evento-subtitulo').textContent = eventoActual.nombre;
+  eventoActual = evento;
+  document.getElementById('evento-subtitulo').textContent = evento?.nombre || '—';
 
   document.getElementById('btn-volver').addEventListener('click', () => {
-    window.location.href = '/pages/evento?id=' + eventoActual.id;
+    window.location.href = '/pages/evento?id=' + id;
   });
 
   document.getElementById('btn-agregar').addEventListener('click', () => {
@@ -43,17 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-guardar').addEventListener('click', guardarReunion);
 
-  renderizarReuniones();
-  solicitarPermisoNotificaciones();
+  await cargarReuniones();
 });
 
 function limpiarForm() {
-  ['reu-titulo', 'reu-fecha', 'reu-hora', 'reu-lugar', 'reu-descripcion'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  ['reu-titulo','reu-fecha','reu-hora','reu-lugar','reu-descripcion'].forEach(id => document.getElementById(id).value = '');
 }
 
-function guardarReunion() {
+async function guardarReunion() {
   const titulo = document.getElementById('reu-titulo').value.trim();
   const fecha = document.getElementById('reu-fecha').value;
   const hora = document.getElementById('reu-hora').value;
@@ -64,37 +57,34 @@ function guardarReunion() {
   if (!fecha) { toast('Por favor seleccioná una fecha.', 'error'); return; }
   if (!hora) { toast('Por favor seleccioná una hora.', 'error'); return; }
 
-  const clave = 'dot-reuniones-' + eventoActual.id;
-  const reuniones = JSON.parse(localStorage.getItem(clave) || '[]');
-  reuniones.push({ id: Date.now(), titulo, fecha, hora, lugar, descripcion });
-  localStorage.setItem(clave, JSON.stringify(reuniones));
+  const { error } = await supabaseClient.from('reuniones').insert({
+    evento_id: eventoActual.id, titulo, fecha, hora, lugar, descripcion
+  });
 
+  if (error) { toast('Error al guardar.', 'error'); return; }
   document.getElementById('form-reunion').style.display = 'none';
   limpiarForm();
-  renderizarReuniones();
+  await cargarReuniones();
   toast('Reunión guardada');
 }
 
-function renderizarReuniones() {
-  const clave = 'dot-reuniones-' + eventoActual.id;
-  const reuniones = JSON.parse(localStorage.getItem(clave) || '[]');
-  const lista = document.getElementById('reunion-list');
+async function cargarReuniones() {
+  const { data: reuniones } = await supabaseClient
+    .from('reuniones').select('*').eq('evento_id', eventoActual.id)
+    .order('fecha').order('hora');
 
-  if (reuniones.length === 0) {
+  const lista = document.getElementById('reunion-list');
+  if (!reuniones || reuniones.length === 0) {
     lista.innerHTML = '<div class="event-empty">No hay reuniones todavía.</div>';
     return;
   }
 
-  reuniones.sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora));
-
   const hoy = new Date().toISOString().split('T')[0];
 
   lista.innerHTML = reuniones.map(r => {
-    const fecha = new Date(r.fecha + 'T' + r.hora);
-    const fechaStr = fecha.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-    const horaStr = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const fechaStr = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
     const esHoy = r.fecha === hoy;
-    const esPasada = new Date(r.fecha + 'T' + r.hora) < new Date();
+    const esPasada = r.fecha < hoy;
 
     return `
       <div class="reunion-card ${esPasada ? 'pasada' : ''} ${esHoy ? 'hoy' : ''}">
@@ -102,11 +92,11 @@ function renderizarReuniones() {
           <div class="reunion-titulo">${r.titulo}</div>
           <div style="display:flex;align-items:center;gap:8px;">
             ${esHoy ? '<span class="reunion-hoy-tag">Hoy</span>' : ''}
-            <button class="btn-eliminar-nota" onclick="eliminarReunion(${r.id})">✕</button>
+            <button class="btn-eliminar-nota" onclick="eliminarReunion('${r.id}')">✕</button>
           </div>
         </div>
         <div class="reunion-meta">
-          <span class="reunion-fecha">${fechaStr} · ${horaStr}</span>
+          <span class="reunion-fecha">${fechaStr} · ${r.hora.substring(0,5)}</span>
           ${r.lugar ? `<span class="reunion-lugar">📍 ${r.lugar}</span>` : ''}
         </div>
         ${r.descripcion ? `<div class="reunion-descripcion">${r.descripcion}</div>` : ''}
@@ -115,18 +105,9 @@ function renderizarReuniones() {
   }).join('');
 }
 
-function eliminarReunion(rId) {
+async function eliminarReunion(rId) {
   if (!confirm('¿Eliminar esta reunión?')) return;
-  const clave = 'dot-reuniones-' + eventoActual.id;
-  const reuniones = JSON.parse(localStorage.getItem(clave) || '[]');
-  localStorage.setItem(clave, JSON.stringify(reuniones.filter(r => r.id !== rId)));
-  renderizarReuniones();
+  await supabaseClient.from('reuniones').delete().eq('id', rId);
+  await cargarReuniones();
   toast('Reunión eliminada');
-}
-
-function solicitarPermisoNotificaciones() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
 }
