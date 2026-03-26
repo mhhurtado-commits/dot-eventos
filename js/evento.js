@@ -115,7 +115,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('btn-exportar').addEventListener('click', exportarPDF);
-
+  document.getElementById('btn-presupuesto').addEventListener('click', () => {
+    window.location.href = '/pages/presupuesto-formal?id=' + eventoActual.id;
+  });
 });
 
 // ── Progreso ──────────────────────────────────────

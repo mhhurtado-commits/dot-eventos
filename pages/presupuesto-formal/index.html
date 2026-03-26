@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Presupuesto · DOT Eventos</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/nuevo-evento.css" />
+  <link rel="stylesheet" href="../../css/presupuesto-formal.css" />
+</head>
+<body class="db-body-page">
+
+  <nav class="db-nav">
+    <div class="db-nav-logo">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" id="btn-volver">← Volver</button>
+    </div>
+  </nav>
+
+  <div class="db-content">
+
+    <div class="db-header">
+      <div>
+        <div class="db-title">Presupuesto formal</div>
+        <div class="db-subtitle" id="evento-subtitulo">Cargando...</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-guardar-pres" id="btn-guardar">💾 Guardar</button>
+        <button class="btn-new" id="btn-pdf">⬇ Exportar PDF</button>
+      </div>
+    </div>
+
+    <!-- Plantillas -->
+    <div class="plantillas-wrapper">
+      <div class="plantilla-btn active" data-plantilla="clasica">
+        <div class="plantilla-preview clasica-prev"></div>
+        <span>Clásica</span>
+      </div>
+      <div class="plantilla-btn" data-plantilla="moderna">
+        <div class="plantilla-preview moderna-prev"></div>
+        <span>Moderna</span>
+      </div>
+      <div class="plantilla-btn" data-plantilla="elegante">
+        <div class="plantilla-preview elegante-prev"></div>
+        <span>Elegante</span>
+      </div>
+    </div>
+
+    <!-- Formulario editable -->
+    <div class="pres-form">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Número de presupuesto</label>
+          <input type="text" id="pres-numero" class="form-input" placeholder="Ej: PRES-2026-001" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Validez de la oferta</label>
+          <input type="text" id="pres-validez" class="form-input" placeholder="Ej: 15 días hábiles" />
+        </div>
+      </div>
+
+      <div class="pres-section-title">Datos del cliente</div>
+      <div class="form-card" style="margin-bottom:1rem;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre del cliente</label>
+            <input type="text" id="cli-nombre" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input type="text" id="cli-telefono" class="form-input" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="cli-email" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección</label>
+            <input type="text" id="cli-direccion" class="form-input" />
+          </div>
+        </div>
+      </div>
+
+      <div class="pres-section-title">Datos del evento</div>
+      <div class="form-card" style="margin-bottom:1rem;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo de evento</label>
+            <input type="text" id="ev-tipo" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha del evento</label>
+            <input type="text" id="ev-fecha" class="form-input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lugar</label>
+          <input type="text" id="ev-lugar" class="form-input" />
+        </div>
+      </div>
+
+      <div class="pres-section-title">Texto de introducción</div>
+      <textarea id="pres-intro" class="form-input form-textarea" style="min-height:100px;" placeholder="Ej: En respuesta a su consulta, nos es grato presentarle el siguiente presupuesto..."></textarea>
+
+      <div class="pres-section-title" style="margin-top:1rem;">Ítems del presupuesto</div>
+
+      <div class="items-tabla">
+        <div class="items-header">
+          <span>Descripción</span>
+          <span>Cant.</span>
+          <span>P. unitario</span>
+          <span>Subtotal</span>
+          <span></span>
+        </div>
+        <div id="items-lista"></div>
+      </div>
+
+      <button class="btn-agregar-item" id="btn-agregar-item">+ Agregar ítem</button>
+
+      <div class="totales-wrapper">
+        <div class="totales-card">
+          <div class="total-row">
+            <span>Subtotal</span>
+            <span id="total-subtotal">$0</span>
+          </div>
+          <div class="total-row">
+            <span>Descuento (%)</span>
+            <input type="number" id="pres-descuento" class="total-input" value="0" min="0" max="100" />
+          </div>
+          <div class="total-row">
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;">
+              <input type="checkbox" id="pres-iva" /> Incluir IVA (21%)
+            </label>
+            <span id="total-iva">$0</span>
+          </div>
+          <div class="total-row total-final">
+            <span>TOTAL</span>
+            <span id="total-final">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pres-section-title">Notas y condiciones</div>
+      <textarea id="pres-notas" class="form-input form-textarea" style="min-height:80px;" placeholder="Ej: Los precios incluyen mano de obra. Seña del 30% al confirmar..."></textarea>
+
+    </div>
+
+    <!-- Preview del PDF -->
+    <div class="pres-section-title" style="margin-top:1.5rem;">Vista previa</div>
+    <div id="pres-preview" class="pres-preview"></div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase.js"></script>
+  <script src="../../js/presupuesto-formal.js"></script>
+</body>
+</html>
