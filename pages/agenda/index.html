@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/dashboard.css" />
   <link rel="stylesheet" href="../../css/agenda.css" />
+  <link rel="stylesheet" href="../../css/reuniones.css" />
 </head>
 <body class="db-body-page">
 
@@ -47,10 +48,14 @@
       </div>
       <div class="cal-grid" id="cal-grid"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <div class="db-section-title" style="margin-top:1.5rem;">Eventos del mes</div>
-    <div class="event-list" id="eventos-mes"></div>
+
+    <div class="db-section-title" style="margin-top:1.5rem;" id="lista-titulo">Eventos y reuniones del mes</div>
+    <div class="event-list" id="eventos-mes">
+      <div class="event-empty">Cargando...</div>
+    </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/supabase.js"></script>
   <script src="../../js/agenda.js"></script>
 </body>
