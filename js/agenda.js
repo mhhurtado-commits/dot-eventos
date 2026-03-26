@@ -1,21 +1,13 @@
-const eventosPrueba = [
-  { id: 1, nombre: 'Casamiento García', fecha: '2026-04-15', lugar: 'Salón Los Aromos', estado: 'confirmado', presupuesto: 320000 },
-  { id: 2, nombre: 'Cumpleaños 15 Martina', fecha: '2026-04-28', lugar: 'Club Andino', estado: 'progreso', presupuesto: 180000 },
-  { id: 3, nombre: 'Reunión corporativa TechCorp', fecha: '2026-05-10', lugar: 'Hotel Diplomático', estado: 'progreso', presupuesto: 210000 },
-  { id: 4, nombre: 'Aniversario Empresa DOT', fecha: '2026-06-22', lugar: '', estado: 'borrador', presupuesto: 130000 }
-];
+document.addEventListener('DOMContentLoaded', async () => {
+  // ←←← AUTENTICACIÓN (igual que en las otras páginas)
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    window.location.href = '/';
+    return;
+  }
 
-const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
-const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
-
-let mesActual = new Date().getMonth();
-let anioActual = new Date().getFullYear();
-
-document.addEventListener('DOMContentLoaded', () => {
-
-  const eventosGuardados = JSON.parse(localStorage.getItem('dot-eventos') || '[]');
-  window.todosLosEventos = [...eventosPrueba, ...eventosGuardados];
+  // Cargar eventos reales de Supabase
+  await cargarEventosReales();
 
   renderizarCalendario();
 
@@ -30,8 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mesActual > 11) { mesActual = 0; anioActual++; }
     renderizarCalendario();
   });
-
 });
+
+let mesActual = new Date().getMonth();
+let anioActual = new Date().getFullYear();
+let todosLosEventos = [];   // ← ahora viene de Supabase
+
+async function cargarEventosReales() {
+  const { data, error } = await supabaseClient
+    .from('eventos')
+    .select('*')
+    .order('fecha', { ascending: true });
+
+  if (error) {
+    console.error('Error al cargar eventos:', error);
+    alert('No se pudieron cargar los eventos de la agenda');
+    return;
+  }
+
+  todosLosEventos = data || [];
+  window.todosLosEventos = todosLosEventos;   // para que las funciones existentes sigan funcionando
+}
+
+const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
+const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
+const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
 
 function renderizarCalendario() {
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -41,7 +56,7 @@ function renderizarCalendario() {
   const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
   const hoy = new Date();
 
-  const eventosDelMes = window.todosLosEventos.filter(e => {
+  const eventosDelMes = todosLosEventos.filter(e => {
     const f = new Date(e.fecha);
     return f.getMonth() === mesActual && f.getFullYear() === anioActual;
   });
@@ -57,7 +72,7 @@ function renderizarCalendario() {
   let html = '';
 
   for (let i = 0; i < primerDia; i++) {
-    html += '<div class="cal-dia vacio"></div>';
+    html += '<div class="cal-dia empty"></div>';
   }
 
   for (let dia = 1; dia <= diasEnMes; dia++) {
@@ -67,15 +82,22 @@ function renderizarCalendario() {
     if (esHoy) clases += ' hoy';
     if (tieneEventos) clases += ' con-evento';
 
-    html += `<div class="${clases}" onclick="irADia(${dia})">
-      <span class="cal-numero">${dia}</span>
-      ${tieneEventos ? `<div class="cal-puntos">${tieneEventos.map(e => `<span class="cal-punto" style="background:${colores[window.todosLosEventos.indexOf(e) % colores.length]}"></span>`).join('')}</div>` : ''}
-    </div>`;
+    html += `
+      <div class="${clases}" onclick="irADia(${dia})">
+        ${dia}
+        ${tieneEventos ? `
+          <div class="cal-eventos">
+            ${tieneEventos.map(e => `
+              <div class="cal-evento-dot" style="background:${colores[todosLosEventos.indexOf(e) % colores.length]};"></div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>`;
   }
 
   grid.innerHTML = html;
 
-  // Eventos del mes
+  // Lista de eventos del mes
   const lista = document.getElementById('eventos-mes');
   if (eventosDelMes.length === 0) {
     lista.innerHTML = '<div class="event-empty">No hay eventos este mes.</div>';
@@ -84,31 +106,35 @@ function renderizarCalendario() {
 
   eventosDelMes.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-  lista.innerHTML = eventosDelMes.map((evento, i) => {
+  lista.innerHTML = eventosDelMes.map(evento => {
     const fecha = new Date(evento.fecha);
     const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-    const color = colores[window.todosLosEventos.indexOf(evento) % colores.length];
+    const color = colores[todosLosEventos.indexOf(evento) % colores.length];
     const estado = evento.estado || 'borrador';
 
     return `
-      <div class="event-card" onclick="window.location.href='/pages/evento?id=${evento.id}'">
-        <div class="event-dot" style="background:${color};"></div>
-        <div class="event-info">
-          <div class="event-name">${evento.nombre}</div>
-          <div class="event-date">${fechaStr}${evento.lugar ? ' · ' + evento.lugar : ''}</div>
+      <div class="evento-mes-item" onclick="window.location.href='/pages/evento?id=${evento.id}'">
+        <div class="evento-dot" style="background:${color};"></div>
+        <div class="evento-info">
+          <div class="evento-nombre">${evento.nombre}</div>
+          <div class="evento-fecha">${fechaStr} ${evento.lugar ? '· ' + evento.lugar : ''}</div>
         </div>
-        <span class="event-badge ${badges[estado]}">${etiquetas[estado]}</span>
+        <span class="badge ${badges[estado]}">${etiquetas[estado]}</span>
       </div>
     `;
   }).join('');
 }
 
 function irADia(dia) {
-  const eventosDelDia = window.todosLosEventos.filter(e => {
+  const eventosDelDia = todosLosEventos.filter(e => {
     const f = new Date(e.fecha);
     return f.getDate() === dia && f.getMonth() === mesActual && f.getFullYear() === anioActual;
   });
+
   if (eventosDelDia.length === 1) {
     window.location.href = '/pages/evento?id=' + eventosDelDia[0].id;
+  } else if (eventosDelDia.length > 1) {
+    // Podés mejorar esto después para mostrar lista
+    alert(`Hay ${eventosDelDia.length} eventos el ${dia}. Haz clic en uno desde la lista.`);
   }
 }
