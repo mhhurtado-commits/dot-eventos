@@ -502,3 +502,40 @@
   .plantillas-wrapper { gap: 8px; }
   .plantilla-preview { width: 48px; height: 64px; }
 }
+.btn-wsp {
+  background: #25D366;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 3px 10px rgba(37,211,102,0.25);
+}
+
+.btn-wsp:hover {
+  background: #20bc5a;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(37,211,102,0.35);
+}
+
+.btn-mail {
+  background: #fff;
+  color: #534AB7;
+  border: 1px solid #c5c1f0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-mail:hover {
+  background: #7F77DD;
+  color: #fff;
+  border-color: #7F77DD;
+  transform: translateY(-1px);
+}

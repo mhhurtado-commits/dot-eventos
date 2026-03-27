@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!evento) { window.location.href = '/pages/dashboard'; return; }
   eventoActual = evento;
-
+document.getElementById('btn-wsp').addEventListener('click', enviarWhatsApp);
+  document.getElementById('btn-mail').addEventListener('click', enviarEmail);
   document.getElementById('evento-subtitulo').textContent = evento.nombre;
   document.getElementById('btn-volver').addEventListener('click', () => {
     window.location.href = '/pages/evento?id=' + eventoId;
@@ -340,7 +341,79 @@ async function guardarPresupuesto() {
 
   toast('Presupuesto guardado');
 }
+function enviarWhatsApp() {
+  const numero = document.getElementById('pres-numero').value;
+  const cliNombre = document.getElementById('cli-nombre').value;
+  const cliTel = document.getElementById('cli-telefono').value;
+  const evTipo = document.getElementById('ev-tipo').value;
+  const evFecha = document.getElementById('ev-fecha').value;
 
+  const subtotal = items.reduce((a, item) => a + (item.cant || 1) * (item.precio || 0), 0);
+  const descPct = parseFloat(document.getElementById('pres-descuento').value) || 0;
+  const descMonto = subtotal * (descPct / 100);
+  const subtotalConDesc = subtotal - descMonto;
+  const incluyeIva = document.getElementById('pres-iva').checked;
+  const iva = incluyeIva ? subtotalConDesc * 0.21 : 0;
+  const total = subtotalConDesc + iva;
+  const validez = document.getElementById('pres-validez').value;
+
+  const itemsTexto = items
+    .filter(i => i.desc)
+    .map(i => `• ${i.desc}: $${((i.cant || 1) * (i.precio || 0)).toLocaleString('es-AR')}`)
+    .join('\n');
+
+  const mensaje = `*DOT Eventos — Presupuesto ${numero}*\n\n` +
+    `Estimado/a ${cliNombre || 'cliente'},\n\n` +
+    `Le enviamos el presupuesto para su ${evTipo} del ${evFecha}:\n\n` +
+    `${itemsTexto}\n\n` +
+    (descPct > 0 ? `Descuento (${descPct}%): -$${descMonto.toLocaleString('es-AR')}\n` : '') +
+    (iva > 0 ? `IVA (21%): $${iva.toLocaleString('es-AR')}\n` : '') +
+    `*TOTAL: $${total.toLocaleString('es-AR')}*\n\n` +
+    (validez ? `_Validez: ${validez}_\n\n` : '') +
+    `Quedamos a su disposición para cualquier consulta.\n*DOT Eventos*`;
+
+  const telLimpio = cliTel.replace(/\D/g, '');
+  const url = `https://wa.me/${telLimpio ? '549' + telLimpio : ''}?text=${encodeURIComponent(mensaje)}`;
+  window.open(url, '_blank');
+}
+
+function enviarEmail() {
+  const numero = document.getElementById('pres-numero').value;
+  const cliNombre = document.getElementById('cli-nombre').value;
+  const cliEmail = document.getElementById('cli-email').value;
+  const evTipo = document.getElementById('ev-tipo').value;
+  const evFecha = document.getElementById('ev-fecha').value;
+
+  const subtotal = items.reduce((a, item) => a + (item.cant || 1) * (item.precio || 0), 0);
+  const descPct = parseFloat(document.getElementById('pres-descuento').value) || 0;
+  const descMonto = subtotal * (descPct / 100);
+  const subtotalConDesc = subtotal - descMonto;
+  const incluyeIva = document.getElementById('pres-iva').checked;
+  const iva = incluyeIva ? subtotalConDesc * 0.21 : 0;
+  const total = subtotalConDesc + iva;
+  const validez = document.getElementById('pres-validez').value;
+  const intro = document.getElementById('pres-intro').value;
+  const notas = document.getElementById('pres-notas').value;
+
+  const itemsTexto = items
+    .filter(i => i.desc)
+    .map(i => `- ${i.desc} (x${i.cant}): $${((i.cant || 1) * (i.precio || 0)).toLocaleString('es-AR')}`)
+    .join('\n');
+
+  const asunto = `Presupuesto DOT Eventos — ${evTipo} — ${numero}`;
+  const cuerpo = `Estimado/a ${cliNombre || 'cliente'},\n\n` +
+    `${intro}\n\n` +
+    `DETALLE:\n${itemsTexto}\n\n` +
+    (descPct > 0 ? `Descuento (${descPct}%): -$${descMonto.toLocaleString('es-AR')}\n` : '') +
+    (iva > 0 ? `IVA (21%): $${iva.toLocaleString('es-AR')}\n` : '') +
+    `TOTAL: $${total.toLocaleString('es-AR')}\n\n` +
+    (validez ? `Validez de esta oferta: ${validez}\n\n` : '') +
+    (notas ? `Condiciones:\n${notas}\n\n` : '') +
+    `Saludos,\nDOT Eventos`;
+
+  const mailtoUrl = `mailto:${cliEmail || ''}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+  window.location.href = mailtoUrl;
+}
 function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
