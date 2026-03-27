@@ -97,3 +97,25 @@
 .reunion-punto {
   background: #EF9F27 !important;
 }
+.agenda-form-modal {
+  margin-top: 1rem;
+  animation: fadeInUp 0.2s ease;
+}
+
+.agenda-form-card {
+  background: #faf9ff;
+  border-radius: 14px;
+  border: 1px solid #c5c1f0;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agenda-form-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: #534AB7;
+  margin-bottom: 4px;
+  text-transform: capitalize;
+}

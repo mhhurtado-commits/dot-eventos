@@ -539,3 +539,27 @@
   border-color: #7F77DD;
   transform: translateY(-1px);
 }
+.prev-firma-bloque {
+  padding: 1.5rem 1.5rem 1rem;
+  margin-top: 1rem;
+  border-top: 0.5px solid #eee;
+}
+
+.prev-firma-linea {
+  width: 160px;
+  height: 1px;
+  background: #7F77DD;
+  margin-bottom: 8px;
+}
+
+.prev-firma-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.prev-firma-cargo {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}

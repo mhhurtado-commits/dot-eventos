@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const estado = document.getElementById('estado').value;
     const lugar = document.getElementById('lugar').value.trim();
     const presupuesto = parseFloat(document.getElementById('presupuesto').value) || 0;
-    const notas = document.getElementById('notas').value.trim();
+    const notaInicial = document.getElementById('notas').value.trim();
     const contacto_nombre = document.getElementById('contacto_nombre').value.trim();
     const contacto_telefono = document.getElementById('contacto_telefono').value.trim();
     const contacto_email = document.getElementById('contacto_email').value.trim();
@@ -22,13 +22,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!contacto_nombre) { alert('Por favor ingresá el nombre del contacto.'); return; }
     if (!contacto_telefono) { alert('Por favor ingresá el teléfono del contacto.'); return; }
 
-    const { error } = await supabaseClient.from('eventos').insert({
-      nombre, tipo, fecha, estado, lugar, presupuesto, notas,
+    // Crear el evento
+    const { data: evento, error } = await supabaseClient.from('eventos').insert({
+      nombre, tipo, fecha, estado, lugar, presupuesto,
       contacto_nombre, contacto_telefono, contacto_email, contacto_direccion,
       user_id: session.user.id
-    });
+    }).select().single();
 
     if (error) { alert('Error al guardar: ' + error.message); return; }
+
+    // Si hay nota inicial, guardarla en la tabla notas
+    if (notaInicial && evento) {
+      await supabaseClient.from('notas').insert({
+        evento_id: evento.id,
+        titulo: 'Nota inicial',
+        texto: notaInicial
+      });
+    }
 
     window.location.href = '/pages/dashboard';
   });

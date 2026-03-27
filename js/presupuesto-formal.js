@@ -206,6 +206,13 @@ function generarHTMLPresupuesto(d) {
     <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
   </svg>`;
 
+  const firmaHTML = `
+    <div class="prev-firma-bloque">
+      <div class="prev-firma-linea"></div>
+      <div class="prev-firma-nombre">DOT Eventos — Patricia Merelo</div>
+      <div class="prev-firma-cargo">Organización de Eventos</div>
+    </div>`;
+
   const itemsHTML = items.map(item => `
     <tr>
       <td>${item.desc || '—'}</td>
@@ -251,6 +258,7 @@ function generarHTMLPresupuesto(d) {
         </div>
         ${d.notas ? `<div class="prev-notas"><strong>Condiciones:</strong><br>${d.notas.replace(/\n/g,'<br>')}</div>` : ''}
         ${d.validez ? `<div class="prev-validez">Validez de esta oferta: ${d.validez}</div>` : ''}
+        ${firmaHTML}
       </div>`;
   }
 
@@ -284,6 +292,7 @@ function generarHTMLPresupuesto(d) {
         </div>
         ${d.notas ? `<div class="prev-notas-moderna">${d.notas.replace(/\n/g,'<br>')}</div>` : ''}
         ${d.validez ? `<div class="prev-validez-moderna">Validez: ${d.validez}</div>` : ''}
+        ${firmaHTML}
       </div>`;
   }
 
@@ -311,7 +320,8 @@ function generarHTMLPresupuesto(d) {
           <div class="prev-total-row prev-total-elegante"><span>TOTAL</span><span>$${d.total.toLocaleString('es-AR')}</span></div>
         </div>
         ${d.notas ? `<div class="prev-notas-elegante">${d.notas.replace(/\n/g,'<br>')}</div>` : ''}
-        ${d.validez ? `<div class="prev-firma-elegante">Validez de esta oferta: ${d.validez}<br><br><br>_______________________<br>DOT Eventos</div>` : ''}
+        ${d.validez ? `<div class="prev-validez-elegante">Validez de esta oferta: ${d.validez}</div>` : ''}
+        ${firmaHTML}
       </div>`;
   }
 }
@@ -605,6 +615,15 @@ function exportarPDF() {
   }
 
   const nombreArchivo = (eventoActual?.nombre || 'presupuesto').replace(/ /g, '-') + '-' + numero + '.pdf';
+  // Firma
+  nl(12);
+  doc.setDrawColor(127, 119, 221);
+  doc.setLineWidth(0.3);
+  doc.line(15, y, 80, y); nl(5);
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+  doc.text('DOT Eventos — Patricia Merelo', 15, y); nl(5);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 140);
+  doc.text('Organización de Eventos', 15, y);
   doc.save(nombreArchivo);
   toast('PDF exportado');
 }
