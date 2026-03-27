@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="../../css/dashboard.css" />
   <link rel="stylesheet" href="../../css/evento.css" />
   <link rel="stylesheet" href="../../css/reuniones.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7F77DD" />
 </head>
 <body class="db-body-page">
 
@@ -55,19 +57,24 @@
 
     <div class="db-metrics">
       <div class="metric">
-        <div class="metric-label">Presupuesto</div>
+        <div class="metric-label">Presupuestado</div>
         <div class="metric-value metric-value-sm" id="ev-presupuesto">—</div>
         <div class="metric-sub">Total estimado</div>
       </div>
       <div class="metric">
         <div class="metric-label">Gastado</div>
         <div class="metric-value metric-value-sm" id="ev-gastado">$0</div>
-        <div class="metric-sub">Pagos realizados</div>
+        <div class="metric-sub">Egresos registrados</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cobrado</div>
+        <div class="metric-value metric-value-sm" id="ev-cobrado">$0</div>
+        <div class="metric-sub">Del cliente</div>
       </div>
       <div class="metric">
         <div class="metric-label">Saldo</div>
         <div class="metric-value metric-value-sm" id="ev-saldo">—</div>
-        <div class="metric-sub">Disponible</div>
+        <div class="metric-sub">Presup. − gastos</div>
       </div>
     </div>
 
@@ -79,6 +86,7 @@
       <button class="tab" data-tab="notas">Notas</button>
     </div>
 
+    <!-- Tab Info -->
     <div class="tab-content active" id="tab-info">
       <div class="info-card">
         <div class="info-row"><span class="info-label">Tipo</span><span class="info-value" id="info-tipo">—</span></div>
@@ -93,10 +101,10 @@
         <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="info-email">—</span></div>
         <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="info-direccion">—</span></div>
       </div>
-      <button class="btn-exportar" id="btn-exportar">⬇ Exportar a PDF</button>
-      <button class="btn-exportar" id="btn-presupuesto" style="background:#f4f3ff;color:#7F77DD;margin-top:0.5rem;">📄 Generar presupuesto formal</button>
+      <button class="btn-exportar" id="btn-exportar">⬇ Exportar resumen PDF</button>
     </div>
 
+    <!-- Tab Reuniones -->
     <div class="tab-content" id="tab-reuniones">
       <div class="section-header">
         <span class="db-section-title">Próximas reuniones</span>
@@ -107,6 +115,7 @@
       </div>
     </div>
 
+    <!-- Tab Reservas -->
     <div class="tab-content" id="tab-reservas">
       <div class="section-header">
         <span class="db-section-title">Reservas</span>
@@ -131,7 +140,44 @@
       <div class="reserva-list" id="reserva-list"><div class="event-empty">Cargando...</div></div>
     </div>
 
+    <!-- Tab Presupuesto -->
     <div class="tab-content" id="tab-presupuesto">
+
+      <!-- Cobros del cliente -->
+      <div class="pres-bloque-titulo">Cobros del cliente</div>
+      <div class="section-header">
+        <span class="db-section-title">Cuotas y pagos</span>
+        <button class="btn-new btn-sm" id="btn-agregar-cobro">+ Agregar</button>
+      </div>
+      <div class="form-nota" id="form-cobro" style="display:none;">
+        <input type="text" id="cob-concepto" class="form-input" placeholder="Concepto (ej: Seña 30%)" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Monto</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="cob-monto" class="form-input with-prefix" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vencimiento</label>
+            <input type="date" id="cob-vencimiento" class="form-input" />
+          </div>
+        </div>
+        <select id="cob-estado" class="form-input">
+          <option value="pendiente">Pendiente de cobro</option>
+          <option value="cobrado">Cobrado</option>
+        </select>
+        <input type="date" id="cob-fecha-cobro" class="form-input" placeholder="Fecha de cobro (si ya cobró)" style="display:none;" />
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-cobro">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-cobro">Guardar</button>
+        </div>
+      </div>
+      <div class="cobro-list" id="cobro-list"><div class="event-empty">Cargando...</div></div>
+
+      <!-- Movimientos/gastos -->
+      <div class="pres-bloque-titulo" style="margin-top:1.5rem;">Gastos y egresos</div>
       <div class="section-header">
         <span class="db-section-title">Movimientos</span>
         <button class="btn-new btn-sm" id="btn-agregar-movimiento">+ Agregar</button>
@@ -161,8 +207,17 @@
         </div>
       </div>
       <div class="movimiento-list" id="movimiento-list"><div class="event-empty">Cargando...</div></div>
+
+      <!-- Presupuesto formal -->
+      <div class="pres-bloque-titulo" style="margin-top:1.5rem;">Presupuesto formal</div>
+      <div id="pres-formal-preview">
+        <div class="event-empty">No hay presupuesto formal generado todavía.</div>
+      </div>
+      <button class="btn-exportar" id="btn-presupuesto" style="margin-top:0.75rem;">📄 Crear / editar presupuesto formal</button>
+
     </div>
 
+    <!-- Tab Notas -->
     <div class="tab-content" id="tab-notas">
       <div class="section-header">
         <span class="db-section-title">Notas</span>

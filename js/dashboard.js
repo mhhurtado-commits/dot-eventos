@@ -1,4 +1,5 @@
 let usuarioActual = null;
+let todosLosEventos = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -25,53 +26,87 @@ document.addEventListener('DOMContentLoaded', async () => {
   await cargarEventos();
   verificarReunionesDeDia();
 
+  // Búsqueda global
   document.getElementById('search-input').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
-    const filtrados = window.todosLosEventos.filter(ev =>
+    if (query.length === 0) {
+      aplicarVista(vistaActual);
+      return;
+    }
+    const filtrados = todosLosEventos.filter(ev =>
       ev.nombre.toLowerCase().includes(query) ||
       (ev.lugar || '').toLowerCase().includes(query) ||
+      (ev.contacto_nombre || '').toLowerCase().includes(query) ||
       (ev.tipo || '').toLowerCase().includes(query)
     );
     renderizarEventos(filtrados);
   });
 
-  document.querySelectorAll('.filtro-btn').forEach(btn => {
+  // Filtros de estado
+  document.querySelectorAll('[data-filtro]').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const filtro = btn.dataset.filtro;
       const filtrados = filtro === 'todos'
-        ? window.todosLosEventos
-        : window.todosLosEventos.filter(e => e.estado === filtro);
+        ? getEventosPorVista(vistaActual)
+        : getEventosPorVista(vistaActual).filter(e => e.estado === filtro);
       renderizarEventos(filtrados);
+    });
+  });
+
+  // Filtros de vista (próximos/historial/todos)
+  document.querySelectorAll('[data-vista]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-vista]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      vistaActual = btn.dataset.vista;
+      aplicarVista(vistaActual);
+      document.getElementById('lista-titulo').textContent =
+        vistaActual === 'pasados' ? 'Historial de eventos' :
+        vistaActual === 'todos' ? 'Todos los eventos' : 'Próximos eventos';
     });
   });
 
 });
 
+let vistaActual = 'proximos';
+
+function getEventosPorVista(vista) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  if (vista === 'proximos') return todosLosEventos.filter(e => new Date(e.fecha + 'T12:00:00') >= hoy);
+  if (vista === 'pasados') return todosLosEventos.filter(e => new Date(e.fecha + 'T12:00:00') < hoy);
+  return todosLosEventos;
+}
+
+function aplicarVista(vista) {
+  document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-filtro="todos"]')?.classList.add('active');
+  renderizarEventos(getEventosPorVista(vista));
+}
+
 async function cargarEventos() {
   const { data: eventos, error } = await supabaseClient
-    .from('eventos')
-    .select('*')
-    .order('fecha', { ascending: true });
+    .from('eventos').select('*').order('fecha', { ascending: true });
 
   if (error) { console.error(error); return; }
-
-  window.todosLosEventos = eventos || [];
-  actualizarMetricas(window.todosLosEventos);
-  renderizarEventos(window.todosLosEventos);
+  todosLosEventos = eventos || [];
+  actualizarMetricas(todosLosEventos);
+  aplicarVista('proximos');
 }
 
 function actualizarMetricas(eventos) {
-  const hoy = new Date();
-  const activos = eventos.filter(e => new Date(e.fecha) >= hoy);
+  const ahora = new Date();
+  ahora.setHours(0, 0, 0, 0);
+  const activos = eventos.filter(e => new Date(e.fecha + 'T12:00:00') >= ahora);
 
   document.getElementById('metric-activos').textContent = activos.length;
   document.getElementById('metric-reuniones').textContent = '—';
 
   if (activos.length > 0) {
     const proximo = activos[0];
-    const fecha = new Date(proximo.fecha);
+    const fecha = new Date(proximo.fecha + 'T12:00:00');
     document.getElementById('metric-proximo').textContent =
       fecha.getDate() + ' ' + fecha.toLocaleString('es-AR', { month: 'short' });
     document.getElementById('metric-proximo-nombre').textContent = proximo.nombre;
@@ -81,7 +116,6 @@ function actualizarMetricas(eventos) {
 }
 
 async function cargarReunionesHoy() {
-  // Fecha de hoy en zona horaria local (Argentina)
   const ahora = new Date();
   const hoy = ahora.getFullYear() + '-' +
     String(ahora.getMonth() + 1).padStart(2, '0') + '-' +
@@ -103,8 +137,7 @@ async function cargarReunionesHoy() {
     banner.innerHTML = `
       <div class="banner-titulo">📅 Reuniones de hoy (${reuniones.length})</div>
       <div class="banner-lista">${reuniones.map(r => `<span>${r.hora.substring(0,5)} — ${r.titulo} <small style="color:#aaa;">(${r.eventos?.nombre})</small></span>`).join('')}</div>
-      <button onclick="this.parentElement.remove()" class="banner-cerrar">✕</button>
-    `;
+      <button onclick="this.parentElement.remove()" class="banner-cerrar">✕</button>`;
     const content = document.querySelector('.db-content');
     if (content) content.prepend(banner);
 
@@ -130,35 +163,37 @@ function renderizarEventos(eventos) {
   const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
   const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
   const tiposIcono = {
-    'cumpleanos_15': '🎀', 'cumpleanos_18': '🎉', 'boda': '💍',
-    'corporativo': '🏢', 'alquiler': '📦', 'otro': '📅'
+    cumpleanos_15: '🎀', cumpleanos_18: '🎉', boda: '💍',
+    corporativo: '🏢', alquiler: '📦', otro: '📅'
   };
 
+  const ahora = new Date();
+  ahora.setHours(0, 0, 0, 0);
+
   lista.innerHTML = eventos.map((evento, i) => {
-    const fecha = new Date(evento.fecha);
-    const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+    const fechaEvento = new Date(evento.fecha + 'T12:00:00');
+    const fechaStr = fechaEvento.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
     const color = colores[i % colores.length];
     const estado = evento.estado || 'borrador';
-    const hoy = new Date();
-    const diasRestantes = Math.ceil((new Date(evento.fecha) - hoy) / (1000 * 60 * 60 * 24));
-    const diasTag = diasRestantes >= 0 && diasRestantes <= 30
+    const esPasado = fechaEvento < ahora;
+    const diasRestantes = Math.ceil((fechaEvento - ahora) / (1000 * 60 * 60 * 24));
+    const diasTag = !esPasado && diasRestantes <= 30
       ? `<span style="font-size:11px;color:#854F0B;background:#faeeda;padding:2px 8px;border-radius:20px;margin-left:6px;">${diasRestantes === 0 ? '¡Hoy!' : 'En ' + diasRestantes + ' días'}</span>`
-      : '';
+      : esPasado ? `<span style="font-size:11px;color:#999;background:#f1efe8;padding:2px 8px;border-radius:20px;margin-left:6px;">Realizado</span>` : '';
     const icono = tiposIcono[evento.tipo] || '📅';
 
     return `
-      <div class="event-card" onclick="window.location.href='/pages/evento?id=${evento.id}'">
-        <div class="event-dot" style="background:${color};"></div>
+      <div class="event-card ${esPasado ? 'event-pasado' : ''}" onclick="window.location.href='/pages/evento?id=${evento.id}'">
+        <div class="event-dot" style="background:${color};${esPasado ? 'opacity:0.5;' : ''}"></div>
         <div class="event-info">
           <div class="event-name">${icono} ${evento.nombre} ${diasTag}</div>
           <div class="event-date">${fechaStr}${evento.lugar ? ' · ' + evento.lugar : ''}${evento.contacto_nombre ? ' · ' + evento.contacto_nombre : ''}</div>
         </div>
         <span class="event-badge ${badges[estado] || 'badge-borrador'}">${etiquetas[estado] || 'Borrador'}</span>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
 async function verificarReunionesDeDia() {
-  // Ya manejado en cargarReunionesHoy()
+  // Manejado en cargarReunionesHoy
 }

@@ -18,6 +18,10 @@ function toast(msg, tipo = 'success') {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
 }
 
+function fechaLocal(fechaStr) {
+  return new Date(fechaStr + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -35,9 +39,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Encabezado
   document.getElementById('evento-dot').style.background = colores[0];
   document.getElementById('evento-titulo').textContent = evento.nombre;
-  const fecha = new Date(evento.fecha);
-  const fechaStr = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-  document.getElementById('evento-meta').textContent = fechaStr + (evento.lugar ? ' · ' + evento.lugar : '');
+  const fecha = new Date(evento.fecha + 'T12:00:00');
+  const fechaStr = fechaLocal(evento.fecha);
+  const lugar = evento.lugar ? ' · ' + evento.lugar : '';
+  document.getElementById('evento-meta').textContent = fechaStr + lugar;
   const badge = document.getElementById('evento-badge');
   badge.textContent = etiquetas[evento.estado] || 'Borrador';
   badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
@@ -56,12 +61,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('info-email').textContent = evento.contacto_email || '—';
   document.getElementById('info-direccion').textContent = evento.contacto_direccion || '—';
 
-  // Cargar todo
+  // Cargar todo en paralelo
   await Promise.all([
     cargarReunionesPreview(),
     cargarReservas(),
     cargarMovimientos(),
-    cargarNotas()
+    cargarCobros(),
+    cargarNotas(),
+    cargarPresupuestoFormal()
   ]);
 
   // Reuniones
@@ -78,6 +85,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     limpiarFormReserva();
   });
   document.getElementById('btn-guardar-reserva').addEventListener('click', guardarReserva);
+
+  // Cobros
+  document.getElementById('btn-agregar-cobro').addEventListener('click', () => {
+    document.getElementById('form-cobro').style.display = 'flex';
+  });
+  document.getElementById('btn-cancelar-cobro').addEventListener('click', () => {
+    document.getElementById('form-cobro').style.display = 'none';
+    limpiarFormCobro();
+  });
+  document.getElementById('btn-guardar-cobro').addEventListener('click', guardarCobro);
+  document.getElementById('cob-estado').addEventListener('change', (e) => {
+    document.getElementById('cob-fecha-cobro').style.display =
+      e.target.value === 'cobrado' ? 'block' : 'none';
+  });
 
   // Movimientos
   document.getElementById('btn-agregar-movimiento').addEventListener('click', () => {
@@ -115,9 +136,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('btn-exportar').addEventListener('click', exportarPDF);
+
   document.getElementById('btn-presupuesto').addEventListener('click', () => {
     window.location.href = '/pages/presupuesto-formal?id=' + eventoActual.id;
   });
+
 });
 
 // ── Progreso ──────────────────────────────────────
@@ -134,10 +157,27 @@ function renderizarProgreso(fechaEvento) {
   else if (diasRestantes <= 30) fill.style.background = '#EF9F27';
 }
 
+// ── Métricas financieras ──────────────────────────
+
+function actualizarMetricasFinancieras(movimientos, cobros) {
+  const gastado = (movimientos || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
+  const cobrado = (cobros || []).filter(c => c.estado === 'cobrado').reduce((a, c) => a + c.monto, 0);
+  const saldo = (eventoActual.presupuesto || 0) - gastado;
+
+  document.getElementById('ev-presupuesto').textContent = '$' + (eventoActual.presupuesto || 0).toLocaleString('es-AR');
+  document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
+  document.getElementById('ev-cobrado').textContent = '$' + cobrado.toLocaleString('es-AR');
+  document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
+  document.getElementById('ev-saldo').style.color = saldo >= 0 ? '#1D9E75' : '#D85A30';
+  document.getElementById('ev-cobrado').style.color = '#1D9E75';
+}
+
 // ── Reuniones preview ─────────────────────────────
 
 async function cargarReunionesPreview() {
-  const hoy = new Date().toISOString().split('T')[0];
+  const ahora = new Date();
+  const hoy = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+
   const { data: reuniones } = await supabaseClient
     .from('reuniones').select('*')
     .eq('evento_id', eventoActual.id)
@@ -152,7 +192,6 @@ async function cargarReunionesPreview() {
   }
 
   lista.innerHTML = reuniones.map(r => {
-    const fechaStr = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
     const esHoy = r.fecha === hoy;
     return `
       <div class="reunion-card ${esHoy ? 'hoy' : ''}" onclick="window.location.href='/pages/reuniones?id=${eventoActual.id}'">
@@ -160,9 +199,8 @@ async function cargarReunionesPreview() {
           <div class="reunion-titulo">${r.titulo}</div>
           ${esHoy ? '<span class="reunion-hoy-tag">Hoy</span>' : ''}
         </div>
-        <div class="reunion-fecha">${fechaStr} · ${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
-      </div>
-    `;
+        <div class="reunion-fecha">${fechaLocal(r.fecha)} · ${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
+      </div>`;
   }).join('');
 }
 
@@ -189,8 +227,7 @@ async function cargarReservas() {
       </div>
       <div class="reserva-detalle">${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}${r.email ? ' · ' + r.email : ''}</div>
       ${r.notas ? `<div class="reserva-notas">${r.notas}</div>` : ''}
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function limpiarFormReserva() {
@@ -227,13 +264,104 @@ async function eliminarReserva(resId) {
   toast('Reserva eliminada');
 }
 
+// ── Cobros ────────────────────────────────────────
+
+async function cargarCobros() {
+  const { data: cobros } = await supabaseClient
+    .from('cobros').select('*').eq('evento_id', eventoActual.id).order('created_at');
+
+  const { data: movimientos } = await supabaseClient
+    .from('movimientos').select('*').eq('evento_id', eventoActual.id);
+
+  actualizarMetricasFinancieras(movimientos, cobros);
+
+  const lista = document.getElementById('cobro-list');
+  if (!cobros || cobros.length === 0) {
+    lista.innerHTML = '<div class="event-empty">No hay cobros registrados todavía.</div>';
+    return;
+  }
+
+  const ahora = new Date();
+  const hoy = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+
+  lista.innerHTML = cobros.map(c => {
+    const esCobrado = c.estado === 'cobrado';
+    const esPendiente = c.estado === 'pendiente';
+    const estaVencido = esPendiente && c.fecha_vencimiento && c.fecha_vencimiento < hoy;
+
+    return `
+      <div class="cobro-card ${esCobrado ? 'cobrado' : ''} ${estaVencido ? 'vencido' : ''}">
+        <div class="cobro-header">
+          <div class="cobro-concepto">${c.concepto}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="cobro-badge ${esCobrado ? 'cobro-badge-ok' : estaVencido ? 'cobro-badge-vencido' : 'cobro-badge-pendiente'}">
+              ${esCobrado ? '✓ Cobrado' : estaVencido ? '⚠ Vencido' : 'Pendiente'}
+            </span>
+            <button class="btn-eliminar-nota" onclick="eliminarCobro('${c.id}')">✕</button>
+          </div>
+        </div>
+        <div class="cobro-monto">$${c.monto.toLocaleString('es-AR')}</div>
+        <div class="cobro-fechas">
+          ${c.fecha_vencimiento ? `<span>Vence: ${fechaLocal(c.fecha_vencimiento)}</span>` : ''}
+          ${c.fecha_cobro ? `<span>Cobrado: ${fechaLocal(c.fecha_cobro)}</span>` : ''}
+        </div>
+        ${esPendiente ? `<button class="btn-marcar-cobrado" onclick="marcarCobrado('${c.id}')">✓ Marcar como cobrado</button>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function limpiarFormCobro() {
+  ['cob-concepto','cob-monto','cob-vencimiento','cob-fecha-cobro'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cob-estado').value = 'pendiente';
+  document.getElementById('cob-fecha-cobro').style.display = 'none';
+}
+
+async function guardarCobro() {
+  const concepto = document.getElementById('cob-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('cob-monto').value) || 0;
+  const fecha_vencimiento = document.getElementById('cob-vencimiento').value || null;
+  const estado = document.getElementById('cob-estado').value;
+  const fecha_cobro = document.getElementById('cob-fecha-cobro').value || null;
+
+  if (!concepto) { toast('Por favor ingresá el concepto.', 'error'); return; }
+  if (!monto || monto <= 0) { toast('Por favor ingresá un monto válido.', 'error'); return; }
+
+  const { error } = await supabaseClient.from('cobros').insert({
+    evento_id: eventoActual.id, concepto, monto, fecha_vencimiento, estado, fecha_cobro
+  });
+
+  if (error) { toast('Error al guardar.', 'error'); return; }
+  document.getElementById('form-cobro').style.display = 'none';
+  limpiarFormCobro();
+  await cargarCobros();
+  toast('Cobro registrado');
+}
+
+async function eliminarCobro(cobroId) {
+  if (!confirm('¿Eliminar este cobro?')) return;
+  await supabaseClient.from('cobros').delete().eq('id', cobroId);
+  await cargarCobros();
+  toast('Cobro eliminado');
+}
+
+async function marcarCobrado(cobroId) {
+  const ahora = new Date();
+  const hoy = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
+  await supabaseClient.from('cobros').update({ estado: 'cobrado', fecha_cobro: hoy }).eq('id', cobroId);
+  await cargarCobros();
+  toast('Marcado como cobrado');
+}
+
 // ── Movimientos ───────────────────────────────────
 
 async function cargarMovimientos() {
   const { data: movimientos } = await supabaseClient
     .from('movimientos').select('*').eq('evento_id', eventoActual.id).order('fecha', { ascending: false });
 
-  actualizarMetricasFinancieras(movimientos || []);
+  const { data: cobros } = await supabaseClient
+    .from('cobros').select('*').eq('evento_id', eventoActual.id);
+
+  actualizarMetricasFinancieras(movimientos, cobros);
 
   const movList = document.getElementById('movimiento-list');
   if (!movimientos || movimientos.length === 0) {
@@ -250,20 +378,10 @@ async function cargarMovimientos() {
         </span>
       </div>
       <div class="movimiento-footer">
-        <span class="movimiento-fecha">${new Date(m.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</span>
+        <span class="movimiento-fecha">${fechaLocal(m.fecha)}</span>
         <button class="btn-eliminar-nota" onclick="eliminarMovimiento('${m.id}')">✕</button>
       </div>
-    </div>
-  `).join('');
-}
-
-function actualizarMetricasFinancieras(movimientos) {
-  const gastado = movimientos.filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
-  const saldo = (eventoActual.presupuesto || 0) - gastado;
-  document.getElementById('ev-presupuesto').textContent = '$' + (eventoActual.presupuesto || 0).toLocaleString('es-AR');
-  document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
-  document.getElementById('ev-saldo').textContent = '$' + saldo.toLocaleString('es-AR');
-  document.getElementById('ev-saldo').style.color = saldo >= 0 ? '#1D9E75' : '#D85A30';
+    </div>`).join('');
 }
 
 function limpiarFormMovimiento() {
@@ -301,6 +419,47 @@ async function eliminarMovimiento(movId) {
   toast('Movimiento eliminado');
 }
 
+// ── Presupuesto formal preview ────────────────────
+
+async function cargarPresupuestoFormal() {
+  const { data: pres } = await supabaseClient
+    .from('presupuestos').select('*').eq('evento_id', eventoActual.id).single();
+
+  const contenedor = document.getElementById('pres-formal-preview');
+  if (!pres) {
+    contenedor.innerHTML = '<div class="event-empty">No hay presupuesto formal generado todavía.</div>';
+    return;
+  }
+
+  const items = pres.items || [];
+  const subtotal = items.reduce((a, i) => a + (i.cant || 1) * (i.precio || 0), 0);
+  const descMonto = subtotal * ((pres.descuento || 0) / 100);
+  const subtotalConDesc = subtotal - descMonto;
+  const iva = pres.incluye_iva ? subtotalConDesc * 0.21 : 0;
+  const total = subtotalConDesc + iva;
+  const fechaGuardado = new Date(pres.updated_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  contenedor.innerHTML = `
+    <div class="pres-formal-card">
+      <div class="pres-formal-header">
+        <div>
+          <div class="pres-formal-num">Presupuesto ${pres.numero || '—'}</div>
+          <div class="pres-formal-fecha">Última versión: ${fechaGuardado}</div>
+        </div>
+        <div class="pres-formal-total">$${total.toLocaleString('es-AR')}</div>
+      </div>
+      <div class="pres-formal-items">
+        ${items.slice(0, 3).map(i => `
+          <div class="pres-formal-item">
+            <span>${i.desc || '—'}</span>
+            <span>$${((i.cant || 1) * (i.precio || 0)).toLocaleString('es-AR')}</span>
+          </div>`).join('')}
+        ${items.length > 3 ? `<div class="pres-formal-mas">+ ${items.length - 3} ítems más</div>` : ''}
+      </div>
+      <div class="pres-formal-plantilla">Plantilla: ${pres.plantilla || 'clásica'}</div>
+    </div>`;
+}
+
 // ── Notas ─────────────────────────────────────────
 
 async function cargarNotas() {
@@ -325,10 +484,8 @@ async function cargarNotas() {
         <div class="nota-audio">
           <span class="nota-audio-nombre">🎵 ${n.audio_nombre}</span>
           <audio controls src="${n.audio_url}" style="width:100%;margin-top:6px;"></audio>
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
+        </div>` : ''}
+    </div>`).join('');
 }
 
 function limpiarFormNota() {
@@ -359,9 +516,7 @@ async function guardarNota() {
   let audio_url = null;
   let audio_nombre = null;
 
-  if (imagenInput.files[0]) {
-    imagen = await fileToBase64(imagenInput.files[0]);
-  }
+  if (imagenInput.files[0]) imagen = await fileToBase64(imagenInput.files[0]);
   if (audioInput.files[0]) {
     audio_url = await fileToBase64(audioInput.files[0]);
     audio_nombre = audioInput.files[0].name;
@@ -388,76 +543,103 @@ async function eliminarNota(notaId) {
 function verImagen(src) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;cursor:pointer;';
-  overlay.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:8px;" />`;
+  overlay.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:12px;" />`;
   overlay.addEventListener('click', () => overlay.remove());
   document.body.appendChild(overlay);
 }
 
-// ── PDF ───────────────────────────────────────────
+// ── PDF resumen ───────────────────────────────────
 
 async function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const evento = eventoActual;
-  const fecha = new Date(evento.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fecha = fechaLocal(evento.fecha);
 
-  const [{ data: movimientos }, { data: reservas }, { data: notas }, { data: reuniones }] = await Promise.all([
+  const [{ data: movimientos }, { data: reservas }, { data: notas }, { data: reuniones }, { data: cobros }] = await Promise.all([
     supabaseClient.from('movimientos').select('*').eq('evento_id', evento.id),
     supabaseClient.from('reservas').select('*').eq('evento_id', evento.id),
     supabaseClient.from('notas').select('titulo, texto').eq('evento_id', evento.id),
-    supabaseClient.from('reuniones').select('*').eq('evento_id', evento.id).order('fecha').order('hora')
+    supabaseClient.from('reuniones').select('*').eq('evento_id', evento.id).order('fecha').order('hora'),
+    supabaseClient.from('cobros').select('*').eq('evento_id', evento.id)
   ]);
 
   const gastado = (movimientos || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
+  const cobrado = (cobros || []).filter(c => c.estado === 'cobrado').reduce((a, c) => a + c.monto, 0);
   const saldo = (evento.presupuesto || 0) - gastado;
 
   let y = 20;
+  const W = 210;
   const nl = (n = 6) => { y += n; if (y > 270) { doc.addPage(); y = 20; } };
 
-  doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-  doc.text('DOT Eventos', 20, y); nl(10);
-  doc.setFontSize(14);
-  doc.text(evento.nombre, 20, y); nl(8);
-  doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(120);
-  doc.text(fecha + (evento.lugar ? ' · ' + evento.lugar : ''), 20, y); nl(6);
-  if (evento.contacto_nombre) doc.text('Contacto: ' + evento.contacto_nombre + (evento.contacto_telefono ? ' · ' + evento.contacto_telefono : ''), 20, y);
-  nl(12);
+  doc.setFillColor(127, 119, 221);
+  doc.rect(0, 0, W, 28, 'F');
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+  doc.text('DOT Eventos', 20, 14);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text('Resumen de evento', 20, 21);
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text(evento.nombre, W - 20, 14, { align: 'right' });
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text(fecha, W - 20, 21, { align: 'right' });
+  y = 38;
 
-  doc.setDrawColor(200); doc.line(20, y, 190, y); nl(8);
-  doc.setTextColor(0); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-  doc.text('Resumen financiero', 20, y); nl(8);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  doc.text('Presupuesto: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 20, y); nl();
-  doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 20, y); nl();
-  doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 20, y); nl(12);
+  doc.setTextColor(0);
+  if (evento.contacto_nombre) {
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 100);
+    doc.text(`Contacto: ${evento.contacto_nombre}${evento.contacto_telefono ? ' · ' + evento.contacto_telefono : ''}`, 15, y); nl(10);
+  }
+
+  doc.setDrawColor(200); doc.line(15, y, W - 15, y); nl(8);
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+  doc.text('Resumen financiero', 15, y); nl(8);
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+  doc.text('Presupuestado: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Cobrado: $' + cobrado.toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 15, y); nl(10);
+
+  if (cobros?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Cobros del cliente', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    cobros.forEach(c => {
+      doc.text(`${c.concepto}: $${c.monto.toLocaleString('es-AR')} — ${c.estado === 'cobrado' ? 'Cobrado' : 'Pendiente'}`, 20, y); nl();
+    });
+    nl(4);
+  }
 
   if (reuniones?.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Reuniones', 20, y); nl(8);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    reuniones.forEach(r => { doc.text(`${r.fecha} ${r.hora.substring(0,5)} — ${r.titulo}${r.lugar ? ' · ' + r.lugar : ''}`, 24, y); nl(); });
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Reuniones', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    reuniones.forEach(r => { doc.text(`${r.fecha} ${r.hora.substring(0,5)} — ${r.titulo}`, 20, y); nl(); });
     nl(4);
   }
 
   if (movimientos?.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Movimientos', 20, y); nl(8);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    movimientos.forEach(m => { doc.text(`${m.concepto} — ${m.tipo === 'egreso' ? '-' : '+'}$${m.monto.toLocaleString('es-AR')}`, 24, y); nl(); });
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Movimientos', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    movimientos.forEach(m => { doc.text(`${m.concepto} — ${m.tipo === 'egreso' ? '-' : '+'}$${m.monto.toLocaleString('es-AR')}`, 20, y); nl(); });
     nl(4);
   }
 
   if (reservas?.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Reservas', 20, y); nl(8);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    reservas.forEach(r => { doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 24, y); nl(); });
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Reservas', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    reservas.forEach(r => { doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 20, y); nl(); });
     nl(4);
   }
 
   if (notas?.length) {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Notas', 20, y); nl(8);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    notas.forEach(n => { doc.text(`${n.titulo}${n.texto ? ': ' + n.texto.substring(0, 80) : ''}`, 24, y); nl(); });
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Notas', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    notas.forEach(n => { doc.text(`${n.titulo}${n.texto ? ': ' + n.texto.substring(0, 80) : ''}`, 20, y); nl(); });
   }
 
-  doc.save(evento.nombre.replace(/ /g, '-') + '.pdf');
+  doc.save(evento.nombre.replace(/ /g, '-') + '-resumen.pdf');
   toast('PDF descargado');
 }

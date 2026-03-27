@@ -6,6 +6,8 @@
   <title>Dashboard · DOT Eventos</title>
   <link rel="stylesheet" href="../../css/style.css" />
   <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7F77DD" />
 </head>
 <body class="db-body-page">
 
@@ -38,7 +40,7 @@
       </div>
       <button class="btn-new" id="btn-nuevo">+ Nuevo evento</button>
     </div>
-
+    <div class="db-section-title" id="lista-titulo">Próximos eventos</div>
     <div class="db-metrics">
       <div class="metric">
         <div class="metric-label">Eventos activos</div>
@@ -67,6 +69,11 @@
       <button class="filtro-btn" data-filtro="confirmado">Confirmados</button>
       <button class="filtro-btn" data-filtro="progreso">En progreso</button>
       <button class="filtro-btn" data-filtro="borrador">Borradores</button>
+    </div>
+    <div class="filtros" style="margin-top:-0.5rem;">
+    <button class="filtro-btn active" data-vista="proximos">Próximos</button>
+    <button class="filtro-btn" data-vista="pasados">Historial</button>
+    <button class="filtro-btn" data-vista="todos">Todos</button>
     </div>
 
     <div class="db-section-title">Próximos eventos</div>

@@ -399,3 +399,14 @@
   .event-amount { display: none; }
   .db-nav-name { font-size: 14px; }
 }
+.event-pasado {
+  opacity: 0.65;
+}
+
+.event-pasado:hover {
+  opacity: 1;
+}
+
+#lista-titulo {
+  transition: all 0.2s;
+}
