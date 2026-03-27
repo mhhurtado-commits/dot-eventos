@@ -81,7 +81,12 @@ function actualizarMetricas(eventos) {
 }
 
 async function cargarReunionesHoy() {
-  const hoy = new Date().toISOString().split('T')[0];
+  // Fecha de hoy en zona horaria local (Argentina)
+  const ahora = new Date();
+  const hoy = ahora.getFullYear() + '-' +
+    String(ahora.getMonth() + 1).padStart(2, '0') + '-' +
+    String(ahora.getDate()).padStart(2, '0');
+
   const { data: reuniones } = await supabaseClient
     .from('reuniones')
     .select('*, eventos(nombre)')
