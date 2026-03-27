@@ -3,6 +3,13 @@ let anioActual = new Date().getFullYear();
 let todosLosEventos = [];
 let todasLasReuniones = [];
 
+function fechaHoyLocal() {
+  const ahora = new Date();
+  return ahora.getFullYear() + '-' +
+    String(ahora.getMonth() + 1).padStart(2, '0') + '-' +
+    String(ahora.getDate()).padStart(2, '0');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -41,39 +48,34 @@ function renderizarCalendario() {
 
   const primerDia = new Date(anioActual, mesActual, 1).getDay();
   const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
-  const hoy = new Date();
-  const hoyStr = hoy.toISOString().split('T')[0];
+  const hoy = fechaHoyLocal();
 
-  // Eventos del mes
   const eventosDelMes = todosLosEventos.filter(e => {
     const f = new Date(e.fecha + 'T12:00:00');
     return f.getMonth() === mesActual && f.getFullYear() === anioActual;
   });
 
-  // Reuniones del mes
   const reunionesDelMes = todasLasReuniones.filter(r => {
     const f = new Date(r.fecha + 'T12:00:00');
     return f.getMonth() === mesActual && f.getFullYear() === anioActual;
   });
 
-  // Mapas por día
   const eventosPorDia = {};
   eventosDelMes.forEach(e => {
     const dia = new Date(e.fecha + 'T12:00:00').getDate();
     if (!eventosPorDia[dia]) eventosPorDia[dia] = [];
-    eventosPorDia[dia].push({ ...e, tipo: 'evento' });
+    eventosPorDia[dia].push(e);
   });
 
   const reunionesPorDia = {};
   reunionesDelMes.forEach(r => {
     const dia = new Date(r.fecha + 'T12:00:00').getDate();
     if (!reunionesPorDia[dia]) reunionesPorDia[dia] = [];
-    reunionesPorDia[dia].push({ ...r, tipo: 'reunion' });
+    reunionesPorDia[dia].push(r);
   });
 
   const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
 
-  // Renderizar grid
   const grid = document.getElementById('cal-grid');
   let html = '';
 
@@ -82,8 +84,10 @@ function renderizarCalendario() {
   }
 
   for (let dia = 1; dia <= diasEnMes; dia++) {
-    const fechaDia = `${anioActual}-${String(mesActual + 1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-    const esHoy = fechaDia === hoyStr;
+    const fechaDia = anioActual + '-' +
+      String(mesActual + 1).padStart(2, '0') + '-' +
+      String(dia).padStart(2, '0');
+    const esHoy = fechaDia === hoy;
     const tieneEventos = eventosPorDia[dia];
     const tieneReuniones = reunionesPorDia[dia];
     let clases = 'cal-dia';
@@ -105,13 +109,12 @@ function renderizarCalendario() {
   }
 
   grid.innerHTML = html;
-
-  // Renderizar lista del mes
   renderizarListaMes(eventosDelMes, reunionesDelMes);
 }
 
 function renderizarListaMes(eventos, reuniones) {
   const lista = document.getElementById('eventos-mes');
+  const hoy = fechaHoyLocal();
   const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
   const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
   const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
@@ -150,7 +153,6 @@ function renderizarListaMes(eventos, reuniones) {
       .sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora))
       .map(r => {
         const fechaStr = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-        const hoy = new Date().toISOString().split('T')[0];
         const esHoy = r.fecha === hoy;
         return `
           <div class="reunion-card ${esHoy ? 'hoy' : ''}" onclick="window.location.href='/pages/reuniones?id=${r.evento_id}'">
@@ -159,7 +161,7 @@ function renderizarListaMes(eventos, reuniones) {
               ${esHoy ? '<span class="reunion-hoy-tag">Hoy</span>' : ''}
             </div>
             <div class="reunion-fecha">${fechaStr} · ${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
-            ${r.eventos?.nombre ? `<div style="font-size:11px;color:#aaa;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
+            ${r.eventos?.nombre ? `<div style="font-size:11px;color:#bbb;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -183,7 +185,6 @@ function seleccionarDia(fechaStr) {
   }
 
   if (eventosDelDia.length > 0 || reunionesDelDia.length > 0) {
-    // Filtrar la lista para mostrar solo ese día
     renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia);
   }
 }
@@ -223,7 +224,7 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
           <div class="reunion-titulo">${r.titulo}</div>
         </div>
         <div class="reunion-fecha">${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
-        ${r.eventos?.nombre ? `<div style="font-size:11px;color:#aaa;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
+        ${r.eventos?.nombre ? `<div style="font-size:11px;color:#bbb;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
       </div>
     `).join('');
   }
