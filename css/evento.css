@@ -1,20 +1,376 @@
+.evento-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.evento-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.evento-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.evento-titulo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+}
+
+.evento-meta { font-size: 13px; color: #999; }
+
+.progreso-wrapper {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(127,119,221,0.04);
+}
+
+.progreso-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progreso-label {
+  font-size: 11px;
+  color: #bbb;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.progreso-dias {
+  font-size: 14px;
+  font-weight: 700;
+  color: #7F77DD;
+}
+
+.progreso-bar {
+  width: 100%;
+  height: 6px;
+  background: #f0eeff;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progreso-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7F77DD, #534AB7);
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #eeedf8;
+  overflow-x: auto;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #bbb;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab:hover { color: #7F77DD; }
+
+.tab.active {
+  color: #7F77DD;
+  border-bottom-color: #7F77DD;
+  font-weight: 600;
+}
+
+.tab-content {
+  display: none !important;
+}
+
+.tab-content.active {
+  display: block !important;
+  animation: fadeInUp 0.2s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── INFO ── */
+.info-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(127,119,221,0.04);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 1.25rem;
+  border-bottom: 1px solid #f5f4fc;
+  transition: background 0.15s;
+}
+
+.info-row:hover { background: #faf9ff; }
+.info-row:last-child { border-bottom: none; }
+
+.info-label {
+  font-size: 12px;
+  color: #bbb;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.info-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.btn-exportar {
+  background: #f4f3ff;
+  border: 1px solid #c5c1f0;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: #534AB7;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.btn-exportar:hover {
+  background: #7F77DD;
+  color: #fff;
+  border-color: #7F77DD;
+}
+
+/* ── SECCIONES ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.reserva-list,
+.movimiento-list,
+.nota-list,
+.cobro-list,
+.reunion-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── CARDS COMPARTIDAS ── */
+.reserva-card,
+.movimiento-card,
+.nota-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(127,119,221,0.04);
+  animation: fadeInUp 0.25s ease both;
+}
+
+/* ── RESERVAS ── */
+.reserva-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.reserva-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.reserva-detalle { font-size: 12px; color: #999; margin-bottom: 4px; }
+.reserva-notas { font-size: 12px; color: #bbb; font-style: italic; margin-top: 4px; }
+
+/* ── MOVIMIENTOS ── */
+.movimiento-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.movimiento-concepto { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.movimiento-monto { font-size: 14px; font-weight: 700; }
+.movimiento-monto.egreso { color: #D85A30; }
+.movimiento-monto.ingreso { color: #1D9E75; }
+
+.movimiento-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.movimiento-fecha { font-size: 12px; color: #bbb; }
+
+/* ── NOTAS ── */
+.nota-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.nota-titulo { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.nota-texto { font-size: 13px; color: #666; line-height: 1.6; }
+
+.nota-imagen {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  max-height: 300px;
+  object-fit: cover;
+}
+
+.nota-imagen:hover { opacity: 0.88; }
+
+.nota-audio {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f4f3ff;
+  border-radius: 10px;
+  border: 1px solid #e0dff0;
+}
+
+.nota-audio-nombre { font-size: 12px; color: #534AB7; font-weight: 600; }
+
+/* ── BOTONES ── */
+.btn-eliminar-nota {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-eliminar-nota:hover { color: #D85A30; background: #ffeee8; }
+
+.form-nota {
+  background: #faf9ff;
+  border-radius: 14px;
+  border: 1px solid #e0dff0;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.form-nota-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── REUNIONES ── */
+.reunion-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  padding: 1rem 1.25rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(127,119,221,0.04);
+}
+
+.reunion-card:hover {
+  border-color: #a9a3e8;
+  box-shadow: 0 4px 14px rgba(127,119,221,0.1);
+  transform: translateY(-1px);
+}
+
+.reunion-card.hoy {
+  border-color: #7F77DD;
+  background: linear-gradient(135deg, #faf9ff, #f0eeff);
+}
+
+.reunion-card.pasada { opacity: 0.55; }
+
+.reunion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.reunion-titulo { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.reunion-fecha { font-size: 12px; color: #999; }
+
+.reunion-hoy-tag {
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #7F77DD, #534AB7);
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+.reunion-preview { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── PRESUPUESTO TAB ── */
 .pres-bloque-titulo {
   font-size: 12px;
   font-weight: 700;
   color: #534AB7;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 0.5rem 0 0.5rem;
+  padding: 0.5rem 0;
   border-bottom: 1px solid #eeedf8;
   margin-bottom: 0.75rem;
 }
 
-.cobro-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* ── COBROS ── */
 .cobro-card {
   background: #fff;
   border-radius: 14px;
@@ -79,6 +435,7 @@
   color: #fff;
 }
 
+/* ── PRESUPUESTO FORMAL PREVIEW ── */
 .pres-formal-card {
   background: linear-gradient(135deg, #faf9ff, #f0eeff);
   border-radius: 14px;
@@ -138,4 +495,10 @@
   font-size: 11px;
   color: #bbb;
   text-transform: capitalize;
+}
+
+@media (max-width: 480px) {
+  .tabs { overflow-x: auto; }
+  .tab { padding: 10px 10px; font-size: 12px; }
+  .evento-titulo { font-size: 18px; }
 }
