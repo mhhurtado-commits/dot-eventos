@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard · DOT Eventos</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/dashboard.css" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#7F77DD" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/notificaciones.css" />
 </head>
 <body class="db-body-page">
 
@@ -26,6 +27,13 @@
     </div>
     <div class="db-nav-right">
       <button class="btn-agenda" onclick="window.location.href='/pages/agenda'">📅 Agenda</button>
+      <div class="notif-wrapper">
+        <button class="notif-btn" id="notif-btn" onclick="toggleNotificaciones()">
+          🔔
+          <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+        </button>
+        <div class="notif-panel" id="notif-panel"></div>
+      </div>
       <div class="db-avatar" id="user-avatar">MH</div>
       <button class="btn-logout" id="btn-logout">Salir</button>
     </div>
@@ -40,7 +48,8 @@
       </div>
       <button class="btn-new" id="btn-nuevo">+ Nuevo evento</button>
     </div>
-    <div class="db-section-title" id="lista-titulo">Próximos eventos</div>
+
+    <!-- Métricas -->
     <div class="db-metrics">
       <div class="metric">
         <div class="metric-label">Eventos activos</div>
@@ -59,9 +68,22 @@
       </div>
     </div>
 
+    <!-- Gráficos -->
+    <div class="graficos-wrapper">
+      <div class="grafico-card">
+        <div class="grafico-titulo">Eventos por mes</div>
+        <canvas id="chart-eventos" height="120"></canvas>
+      </div>
+      <div class="grafico-card">
+        <div class="grafico-titulo">Finanzas</div>
+        <canvas id="chart-finanzas" height="120"></canvas>
+      </div>
+    </div>
+
+    <!-- Búsqueda y filtros -->
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" class="search-bar" placeholder="Buscar eventos..." />
+      <input type="text" id="search-input" class="search-bar" placeholder="Buscar por nombre, lugar o contacto..." />
     </div>
 
     <div class="filtros">
@@ -70,21 +92,24 @@
       <button class="filtro-btn" data-filtro="progreso">En progreso</button>
       <button class="filtro-btn" data-filtro="borrador">Borradores</button>
     </div>
+
     <div class="filtros" style="margin-top:-0.5rem;">
-    <button class="filtro-btn active" data-vista="proximos">Próximos</button>
-    <button class="filtro-btn" data-vista="pasados">Historial</button>
-    <button class="filtro-btn" data-vista="todos">Todos</button>
+      <button class="filtro-btn active" data-vista="proximos">Próximos</button>
+      <button class="filtro-btn" data-vista="pasados">Historial</button>
+      <button class="filtro-btn" data-vista="todos">Todos</button>
     </div>
 
-    <div class="db-section-title">Próximos eventos</div>
+    <div class="db-section-title" id="lista-titulo">Próximos eventos</div>
     <div class="event-list" id="event-list">
       <div class="event-empty">Cargando eventos...</div>
     </div>
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../js/supabase.js"></script>
+  <script src="../../js/notificaciones.js"></script>
   <script src="../../js/dashboard.js"></script>
 </body>
 </html>

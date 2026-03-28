@@ -1,5 +1,6 @@
 let usuarioActual = null;
 let todosLosEventos = [];
+let vistaActual = 'proximos';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -24,15 +25,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await cargarEventos();
-  verificarReunionesDeDia();
+  await cargarNotificaciones();
+  cargarReunionesHoy();
 
-  // Búsqueda global
+  // Búsqueda
   document.getElementById('search-input').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
-    if (query.length === 0) {
-      aplicarVista(vistaActual);
-      return;
-    }
+    if (query.length === 0) { aplicarVista(vistaActual); return; }
     const filtrados = todosLosEventos.filter(ev =>
       ev.nombre.toLowerCase().includes(query) ||
       (ev.lugar || '').toLowerCase().includes(query) ||
@@ -42,20 +41,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderizarEventos(filtrados);
   });
 
-  // Filtros de estado
+  // Filtros estado
   document.querySelectorAll('[data-filtro]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('[data-filtro]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const filtro = btn.dataset.filtro;
-      const filtrados = filtro === 'todos'
-        ? getEventosPorVista(vistaActual)
-        : getEventosPorVista(vistaActual).filter(e => e.estado === filtro);
+      const base = getEventosPorVista(vistaActual);
+      const filtrados = filtro === 'todos' ? base : base.filter(e => e.estado === filtro);
       renderizarEventos(filtrados);
     });
   });
 
-  // Filtros de vista (próximos/historial/todos)
+  // Filtros vista
   document.querySelectorAll('[data-vista]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('[data-vista]').forEach(b => b.classList.remove('active'));
@@ -68,13 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+
 });
 
-let vistaActual = 'proximos';
-
 function getEventosPorVista(vista) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
   if (vista === 'proximos') return todosLosEventos.filter(e => new Date(e.fecha + 'T12:00:00') >= hoy);
   if (vista === 'pasados') return todosLosEventos.filter(e => new Date(e.fecha + 'T12:00:00') < hoy);
   return todosLosEventos;
@@ -89,21 +88,18 @@ function aplicarVista(vista) {
 async function cargarEventos() {
   const { data: eventos, error } = await supabaseClient
     .from('eventos').select('*').order('fecha', { ascending: true });
-
   if (error) { console.error(error); return; }
   todosLosEventos = eventos || [];
   actualizarMetricas(todosLosEventos);
   aplicarVista('proximos');
+  renderizarGraficos(todosLosEventos);
 }
 
 function actualizarMetricas(eventos) {
-  const ahora = new Date();
-  ahora.setHours(0, 0, 0, 0);
+  const ahora = new Date(); ahora.setHours(0,0,0,0);
   const activos = eventos.filter(e => new Date(e.fecha + 'T12:00:00') >= ahora);
-
   document.getElementById('metric-activos').textContent = activos.length;
   document.getElementById('metric-reuniones').textContent = '—';
-
   if (activos.length > 0) {
     const proximo = activos[0];
     const fecha = new Date(proximo.fecha + 'T12:00:00');
@@ -111,21 +107,13 @@ function actualizarMetricas(eventos) {
       fecha.getDate() + ' ' + fecha.toLocaleString('es-AR', { month: 'short' });
     document.getElementById('metric-proximo-nombre').textContent = proximo.nombre;
   }
-
-  cargarReunionesHoy();
 }
 
 async function cargarReunionesHoy() {
   const ahora = new Date();
-  const hoy = ahora.getFullYear() + '-' +
-    String(ahora.getMonth() + 1).padStart(2, '0') + '-' +
-    String(ahora.getDate()).padStart(2, '0');
-
+  const hoy = ahora.getFullYear() + '-' + String(ahora.getMonth()+1).padStart(2,'0') + '-' + String(ahora.getDate()).padStart(2,'0');
   const { data: reuniones } = await supabaseClient
-    .from('reuniones')
-    .select('*, eventos(nombre)')
-    .eq('fecha', hoy)
-    .order('hora', { ascending: true });
+    .from('reuniones').select('*, eventos(nombre)').eq('fecha', hoy).order('hora');
 
   const count = reuniones?.length || 0;
   document.getElementById('metric-reuniones').textContent = count;
@@ -140,7 +128,6 @@ async function cargarReunionesHoy() {
       <button onclick="this.parentElement.remove()" class="banner-cerrar">✕</button>`;
     const content = document.querySelector('.db-content');
     if (content) content.prepend(banner);
-
     if (Notification.permission === 'granted') {
       new Notification('DOT Eventos — Reuniones de hoy', {
         body: reuniones.map(r => `• ${r.hora.substring(0,5)} — ${r.titulo}`).join('\n')
@@ -153,7 +140,6 @@ async function cargarReunionesHoy() {
 
 function renderizarEventos(eventos) {
   const lista = document.getElementById('event-list');
-
   if (eventos.length === 0) {
     lista.innerHTML = '<div class="event-empty">No se encontraron eventos.</div>';
     return;
@@ -167,8 +153,7 @@ function renderizarEventos(eventos) {
     corporativo: '🏢', alquiler: '📦', otro: '📅'
   };
 
-  const ahora = new Date();
-  ahora.setHours(0, 0, 0, 0);
+  const ahora = new Date(); ahora.setHours(0,0,0,0);
 
   lista.innerHTML = eventos.map((evento, i) => {
     const fechaEvento = new Date(evento.fecha + 'T12:00:00');
@@ -194,6 +179,122 @@ function renderizarEventos(eventos) {
   }).join('');
 }
 
-async function verificarReunionesDeDia() {
-  // Manejado en cargarReunionesHoy
+function renderizarGraficos(eventos) {
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const ahora = new Date();
+  const labels = [];
+  const dataEventos = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    labels.push(meses[d.getMonth()]);
+    const count = eventos.filter(e => {
+      const fe = new Date(e.fecha + 'T12:00:00');
+      return fe.getMonth() === d.getMonth() && fe.getFullYear() === d.getFullYear();
+    }).length;
+    dataEventos.push(count);
+  }
+
+  const ctxE = document.getElementById('chart-eventos');
+  if (ctxE) {
+    new Chart(ctxE, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Eventos',
+          data: dataEventos,
+          backgroundColor: 'rgba(127,119,221,0.7)',
+          borderColor: '#7F77DD',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Gráfico finanzas — necesita datos de movimientos
+  cargarGraficoFinanzas(eventos, labels, ahora);
+}
+
+async function cargarGraficoFinanzas(eventos, labels, ahora) {
+  const { data: movimientos } = await supabaseClient.from('movimientos').select('*');
+  const { data: cobros } = await supabaseClient.from('cobros').select('*').eq('estado', 'cobrado');
+
+  const dataIngresos = [];
+  const dataEgresos = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    const mes = d.getMonth();
+    const anio = d.getFullYear();
+
+    const ingresos = (cobros || []).filter(c => {
+      const f = new Date(c.fecha_cobro + 'T12:00:00');
+      return f.getMonth() === mes && f.getFullYear() === anio;
+    }).reduce((a, c) => a + c.monto, 0);
+
+    const egresos = (movimientos || []).filter(m => {
+      if (m.tipo !== 'egreso') return false;
+      const f = new Date(m.fecha + 'T12:00:00');
+      return f.getMonth() === mes && f.getFullYear() === anio;
+    }).reduce((a, m) => a + m.monto, 0);
+
+    dataIngresos.push(ingresos);
+    dataEgresos.push(egresos);
+  }
+
+  const ctxF = document.getElementById('chart-finanzas');
+  if (ctxF) {
+    new Chart(ctxF, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Cobros',
+            data: dataIngresos,
+            borderColor: '#1D9E75',
+            backgroundColor: 'rgba(29,158,117,0.08)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#1D9E75',
+            pointRadius: 4
+          },
+          {
+            label: 'Gastos',
+            data: dataEgresos,
+            borderColor: '#D85A30',
+            backgroundColor: 'rgba(216,90,48,0.08)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#D85A30',
+            pointRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: { font: { size: 11 }, boxWidth: 12 }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
 }

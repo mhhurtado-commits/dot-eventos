@@ -84,6 +84,8 @@
       <button class="tab" data-tab="reservas">Reservas</button>
       <button class="tab" data-tab="presupuesto">Presupuesto</button>
       <button class="tab" data-tab="notas">Notas</button>
+      <button class="tab" data-tab="tareas">Tareas</button>
+      <button class="tab" data-tab="chat">Chat</button>
     </div>
 
     <!-- Tab Info -->
@@ -241,6 +243,37 @@
       </div>
       <div class="nota-list" id="nota-list"><div class="event-empty">Cargando...</div></div>
     </div>
+    <!-- Tab Tareas -->
+      <div class="tab-content" id="tab-tareas">
+      <div class="section-header">
+      <span class="db-section-title">Checklist</span>
+      <button class="btn-new btn-sm" id="btn-agregar-tarea">+ Agregar</button>
+      </div>
+      <div class="progreso-tareas" id="progreso-tareas"></div>
+      <div class="form-nota" id="form-tarea" style="display:none;">
+      <input type="text" id="tarea-titulo-input" class="form-input" placeholder="Descripción de la tarea" />
+      <div class="form-nota-actions">
+      <button class="btn-cancel" id="btn-cancelar-tarea">Cancelar</button>
+      <button class="btn-new" id="btn-guardar-tarea">Agregar tarea</button>
+    </div>
+    </div>
+    <div class="tarea-list" id="tarea-list">
+    <div class="event-empty">Cargando...</div>
+    </div>
+  </div>
+
+    <!-- Tab Chat -->
+  <div class="tab-content" id="tab-chat">
+  <div class="chat-wrapper">
+    <div class="chat-mensajes" id="chat-mensajes">
+      <div class="event-empty">Cargando...</div>
+    </div>
+    <div class="chat-input-wrapper">
+      <input type="text" id="chat-input" class="form-input" placeholder="Escribí un comentario..." />
+      <button class="btn-new" id="btn-enviar-chat">Enviar</button>
+    </div>
+  </div>
+</div>
 
   </div>
 

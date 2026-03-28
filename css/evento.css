@@ -502,3 +502,160 @@
   .tab { padding: 10px 10px; font-size: 12px; }
   .evento-titulo { font-size: 18px; }
 }
+/* ── TAREAS ── */
+.tareas-progreso-wrapper {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.tareas-progreso-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tareas-progreso-label { font-size: 13px; color: #666; }
+.tareas-progreso-pct { font-size: 14px; font-weight: 700; color: #7F77DD; }
+
+.tareas-progreso-bar {
+  width: 100%;
+  height: 6px;
+  background: #f0eeff;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tareas-progreso-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7F77DD, #534AB7);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.tarea-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tarea-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eeedf8;
+  padding: 10px 1rem;
+  transition: all 0.2s;
+}
+
+.tarea-item.completada { opacity: 0.6; }
+.tarea-item.completada .tarea-titulo { text-decoration: line-through; color: #bbb; }
+
+.tarea-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #c5c1f0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.tarea-check.checked {
+  background: #7F77DD;
+  border-color: #7F77DD;
+}
+
+.tarea-titulo {
+  flex: 1;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+/* ── CHAT ── */
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-mensajes {
+  background: #faf9ff;
+  border-radius: 14px;
+  border: 1px solid #eeedf8;
+  padding: 1rem;
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input-wrapper .form-input {
+  flex: 1;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+}
+
+.chat-msg.mio {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-msg.otro {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chat-autor {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 3px;
+  padding-left: 4px;
+}
+
+.chat-burbuja {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #eeedf8;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #1a1a2e;
+  line-height: 1.5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.chat-msg.mio .chat-burbuja {
+  background: linear-gradient(135deg, #7F77DD, #534AB7);
+  color: #fff;
+  border-color: transparent;
+}
+
+.chat-hora {
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 3px;
+  padding: 0 4px;
+}

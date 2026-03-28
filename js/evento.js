@@ -62,13 +62,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('info-direccion').textContent = evento.contacto_direccion || '—';
 
   // Cargar todo en paralelo
-  await Promise.all([
+    await Promise.all([
     cargarReunionesPreview(),
     cargarReservas(),
     cargarMovimientos(),
     cargarCobros(),
     cargarNotas(),
-    cargarPresupuestoFormal()
+    cargarPresupuestoFormal(),
+    cargarTareas(),
+    cargarChat()
   ]);
 
   // Reuniones
@@ -133,6 +135,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-editar').addEventListener('click', () => {
     window.location.href = '/pages/editar-evento?id=' + eventoActual.id;
+  });
+  // Tareas
+  document.getElementById('btn-agregar-tarea').addEventListener('click', () => {
+    document.getElementById('form-tarea').style.display = 'flex';
+  });
+  document.getElementById('btn-cancelar-tarea').addEventListener('click', () => {
+    document.getElementById('form-tarea').style.display = 'none';
+    document.getElementById('tarea-titulo-input').value = '';
+  });
+  document.getElementById('btn-guardar-tarea').addEventListener('click', async () => {
+    const titulo = document.getElementById('tarea-titulo-input').value.trim();
+    if (!titulo) { toast('Por favor ingresá la tarea.', 'error'); return; }
+    await supabaseClient.from('tareas').insert({ evento_id: eventoActual.id, titulo });
+    document.getElementById('form-tarea').style.display = 'none';
+    document.getElementById('tarea-titulo-input').value = '';
+    await cargarTareas();
+    toast('Tarea agregada');
+  });
+
+  // Chat
+  document.getElementById('btn-enviar-chat').addEventListener('click', enviarMensaje);
+  document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') enviarMensaje();
   });
 
   document.getElementById('btn-exportar').addEventListener('click', exportarPDF);
@@ -642,4 +667,105 @@ async function exportarPDF() {
 
   doc.save(evento.nombre.replace(/ /g, '-') + '-resumen.pdf');
   toast('PDF descargado');
+}
+// ── Tareas ────────────────────────────────────────
+
+async function cargarTareas() {
+  const { data: tareas } = await supabaseClient
+    .from('tareas').select('*').eq('evento_id', eventoActual.id).order('orden').order('created_at');
+
+  const lista = document.getElementById('tarea-list');
+  const progreso = document.getElementById('progreso-tareas');
+
+  if (!tareas || tareas.length === 0) {
+    lista.innerHTML = '<div class="event-empty">No hay tareas todavía.</div>';
+    if (progreso) progreso.innerHTML = '';
+    return;
+  }
+
+  const completadas = tareas.filter(t => t.completada).length;
+  const pct = Math.round((completadas / tareas.length) * 100);
+
+  if (progreso) {
+    progreso.innerHTML = `
+      <div class="tareas-progreso-wrapper">
+        <div class="tareas-progreso-info">
+          <span class="tareas-progreso-label">${completadas} de ${tareas.length} tareas completadas</span>
+          <span class="tareas-progreso-pct">${pct}%</span>
+        </div>
+        <div class="tareas-progreso-bar">
+          <div class="tareas-progreso-fill" style="width:${pct}%"></div>
+        </div>
+      </div>`;
+  }
+
+  lista.innerHTML = tareas.map(t => `
+    <div class="tarea-item ${t.completada ? 'completada' : ''}">
+      <button class="tarea-check ${t.completada ? 'checked' : ''}" onclick="toggleTarea('${t.id}', ${t.completada})">
+        ${t.completada ? '✓' : ''}
+      </button>
+      <span class="tarea-titulo">${t.titulo}</span>
+      <button class="btn-eliminar-nota" onclick="eliminarTarea('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+async function toggleTarea(tareaId, completada) {
+  await supabaseClient.from('tareas').update({ completada: !completada }).eq('id', tareaId);
+  await cargarTareas();
+}
+
+async function eliminarTarea(tareaId) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  await supabaseClient.from('tareas').delete().eq('id', tareaId);
+  await cargarTareas();
+}
+
+// ── Chat / Comentarios ────────────────────────────
+
+async function cargarChat() {
+  const { data: comentarios } = await supabaseClient
+    .from('comentarios').select('*').eq('evento_id', eventoActual.id).order('created_at');
+
+  const mensajes = document.getElementById('chat-mensajes');
+  if (!comentarios || comentarios.length === 0) {
+    mensajes.innerHTML = '<div class="event-empty">No hay comentarios todavía.</div>';
+    return;
+  }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const miEmail = session?.user?.email;
+
+  mensajes.innerHTML = comentarios.map(c => {
+    const esMio = c.autor_email === miEmail;
+    const hora = new Date(c.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const fecha = new Date(c.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    return `
+      <div class="chat-msg ${esMio ? 'mio' : 'otro'}">
+        ${!esMio ? `<div class="chat-autor">${c.autor_nombre}</div>` : ''}
+        <div class="chat-burbuja">${c.mensaje}</div>
+        <div class="chat-hora">${fecha} ${hora}</div>
+      </div>`;
+  }).join('');
+
+  mensajes.scrollTop = mensajes.scrollHeight;
+}
+
+async function enviarMensaje() {
+  const input = document.getElementById('chat-input');
+  const mensaje = input.value.trim();
+  if (!mensaje) return;
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const nombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Usuario';
+
+  const { error } = await supabaseClient.from('comentarios').insert({
+    evento_id: eventoActual.id,
+    autor_nombre: nombre,
+    autor_email: session?.user?.email,
+    mensaje
+  });
+
+  if (error) { toast('Error al enviar.', 'error'); return; }
+  input.value = '';
+  await cargarChat();
 }
