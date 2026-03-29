@@ -1,434 +1,287 @@
-let mesActual = new Date().getMonth();
-let anioActual = new Date().getFullYear();
-let todosLosEventos = [];
-let todasLasReuniones = [];
-let todasLasTareas = [];
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Evento · DOT Eventos</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#7F77DD" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/dashboard.css" />
+  <link rel="stylesheet" href="../../css/evento.css" />
+  <link rel="stylesheet" href="../../css/reuniones.css" />
+</head>
+<body class="db-body-page">
 
-function fechaHoyLocal() {
-  const ahora = new Date();
-  return ahora.getFullYear() + '-' +
-    String(ahora.getMonth() + 1).padStart(2, '0') + '-' +
-    String(ahora.getDate()).padStart(2, '0');
-}
+  <nav class="db-nav">
+    <div class="db-nav-logo" onclick="window.location.href='/pages/dashboard'" style="cursor:pointer;">
+      <div class="db-nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="5" fill="white"/>
+          <circle cx="6"  cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="18" cy="6"  r="2" fill="white" opacity="0.5"/>
+          <circle cx="6"  cy="18" r="2" fill="white" opacity="0.3"/>
+          <circle cx="18" cy="18" r="2" fill="white" opacity="0.3"/>
+        </svg>
+      </div>
+      <span class="db-nav-name">DOT</span>
+    </div>
+    <div class="db-nav-right">
+      <button class="btn-logout" onclick="window.location.href='/pages/dashboard'">← Volver</button>
+      <button class="btn-new" id="btn-editar">Editar</button>
+    </div>
+  </nav>
 
-function toast(msg, tipo = 'success') {
-  const t = document.createElement('div');
-  t.className = 'toast ' + tipo;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.classList.add('show'), 10);
-  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 2800);
-}
+  <div class="db-content">
 
-document.addEventListener('DOMContentLoaded', async () => {
-
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) { window.location.href = '/'; return; }
-
-  await cargarDatos();
-  renderizarCalendario();
-
-  document.getElementById('btn-prev').addEventListener('click', () => {
-    mesActual--;
-    if (mesActual < 0) { mesActual = 11; anioActual--; }
-    renderizarCalendario();
-  });
-
-  document.getElementById('btn-next').addEventListener('click', () => {
-    mesActual++;
-    if (mesActual > 11) { mesActual = 0; anioActual++; }
-    renderizarCalendario();
-  });
-
-});
-
-async function cargarDatos() {
-  const [{ data: eventos }, { data: reuniones }, { data: tareas }] = await Promise.all([
-    supabaseClient.from('eventos').select('*').order('fecha', { ascending: true }),
-    supabaseClient.from('reuniones').select('*, eventos(nombre, fecha)').order('fecha').order('hora'),
-    supabaseClient.from('tareas').select('*, eventos(nombre, fecha)').eq('completada', false)
-  ]);
-  todosLosEventos = eventos || [];
-  todasLasReuniones = reuniones || [];
-  todasLasTareas = tareas || [];
-}
-
-function renderizarCalendario() {
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  document.getElementById('mes-actual').textContent = meses[mesActual] + ' ' + anioActual;
-
-  const primerDia = new Date(anioActual, mesActual, 1).getDay();
-  const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate();
-  const hoy = fechaHoyLocal();
-
-  const eventosDelMes = todosLosEventos.filter(e => {
-    const f = new Date(e.fecha + 'T12:00:00');
-    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
-  });
-
-  const reunionesDelMes = todasLasReuniones.filter(r => {
-    const f = new Date(r.fecha + 'T12:00:00');
-    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
-  });
-
-  // Tareas con vencimiento este mes
-  const tareasDelMes = todasLasTareas.filter(t => {
-    if (!t.fecha_vencimiento) return false;
-    const f = new Date(t.fecha_vencimiento + 'T12:00:00');
-    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
-  });
-
-  const eventosPorDia = {};
-  eventosDelMes.forEach(e => {
-    const dia = new Date(e.fecha + 'T12:00:00').getDate();
-    if (!eventosPorDia[dia]) eventosPorDia[dia] = [];
-    eventosPorDia[dia].push(e);
-  });
-
-  const reunionesPorDia = {};
-  reunionesDelMes.forEach(r => {
-    const dia = new Date(r.fecha + 'T12:00:00').getDate();
-    if (!reunionesPorDia[dia]) reunionesPorDia[dia] = [];
-    reunionesPorDia[dia].push(r);
-  });
-
-  const tareasPorDia = {};
-  tareasDelMes.forEach(t => {
-    const dia = new Date(t.fecha_vencimiento + 'T12:00:00').getDate();
-    if (!tareasPorDia[dia]) tareasPorDia[dia] = [];
-    tareasPorDia[dia].push(t);
-  });
-
-  const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-  const grid = document.getElementById('cal-grid');
-  let html = '';
-
-  for (let i = 0; i < primerDia; i++) {
-    html += '<div class="cal-dia vacio"></div>';
-  }
-
-  for (let dia = 1; dia <= diasEnMes; dia++) {
-    const fechaDia = anioActual + '-' +
-      String(mesActual + 1).padStart(2, '0') + '-' +
-      String(dia).padStart(2, '0');
-    const esHoy = fechaDia === hoy;
-    const tieneEventos = eventosPorDia[dia];
-    const tieneReuniones = reunionesPorDia[dia];
-    const tieneTareas = tareasPorDia[dia];
-    let clases = 'cal-dia';
-    if (esHoy) clases += ' hoy';
-    if (tieneEventos || tieneReuniones || tieneTareas) clases += ' con-evento';
-
-    const puntosEventos = tieneEventos
-      ? tieneEventos.map((e, i) => `<span class="cal-punto" style="background:${colores[i % colores.length]}"></span>`).join('')
-      : '';
-    const puntosReuniones = tieneReuniones ? `<span class="cal-punto reunion-punto"></span>` : '';
-    const puntosTareas = tieneTareas ? `<span class="cal-punto tarea-punto"></span>` : '';
-
-    html += `
-      <div class="${clases}" onclick="seleccionarDia('${fechaDia}')">
-        <span class="cal-numero">${dia}</span>
-        ${(tieneEventos || tieneReuniones || tieneTareas) ? `<div class="cal-puntos">${puntosEventos}${puntosReuniones}${puntosTareas}</div>` : ''}
-      </div>`;
-  }
-
-  grid.innerHTML = html;
-  renderizarListaMes(eventosDelMes, reunionesDelMes, tareasDelMes);
-}
-
-function renderizarListaMes(eventos, reuniones, tareas) {
-  const lista = document.getElementById('eventos-mes');
-  const hoy = fechaHoyLocal();
-  const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-  const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
-  const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
-
-  if (eventos.length === 0 && reuniones.length === 0 && tareas.length === 0) {
-    lista.innerHTML = '<div class="event-empty">No hay actividad este mes.</div>';
-    return;
-  }
-
-  let html = '';
-
-  if (eventos.length > 0) {
-    html += `<div class="agenda-seccion-titulo">Eventos</div>`;
-    html += eventos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).map((e, i) => {
-      const fechaStr = new Date(e.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-      return `
-        <div class="event-card" onclick="window.location.href='/pages/evento?id=${e.id}'">
-          <div class="event-dot" style="background:${colores[i % colores.length]};"></div>
-          <div class="event-info">
-            <div class="event-name">${e.nombre}</div>
-            <div class="event-date">${fechaStr}${e.lugar ? ' · ' + e.lugar : ''}</div>
-          </div>
-          <span class="event-badge ${badges[e.estado] || 'badge-borrador'}">${etiquetas[e.estado] || 'Borrador'}</span>
-        </div>`;
-    }).join('');
-  }
-
-  if (reuniones.length > 0) {
-    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Reuniones</div>`;
-    html += reuniones.sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora)).map(r => {
-      const fechaStr = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-      const esHoy = r.fecha === hoy;
-      return `
-        <div class="reunion-card ${esHoy ? 'hoy' : ''}" onclick="window.location.href='/pages/reuniones?id=${r.evento_id}'">
-          <div class="reunion-header">
-            <div class="reunion-titulo">${r.titulo}</div>
-            ${esHoy ? '<span class="reunion-hoy-tag">Hoy</span>' : ''}
-          </div>
-          <div class="reunion-fecha">${fechaStr} · ${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
-          ${r.eventos?.nombre ? `<div style="font-size:11px;color:#bbb;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
-        </div>`;
-    }).join('');
-  }
-
-  if (tareas.length > 0) {
-    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Tareas pendientes con vencimiento</div>`;
-    html += tareas.sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento)).map(t => {
-      const fechaStr = new Date(t.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-      const esHoy = t.fecha_vencimiento === hoy;
-      const estaVencida = t.fecha_vencimiento < hoy;
-      return `
-        <div class="tarea-agenda-card ${estaVencida ? 'vencida' : ''} ${esHoy ? 'hoy-tarea' : ''}" onclick="window.location.href='/pages/evento?id=${t.evento_id}'">
-          <div class="tarea-agenda-titulo">✅ ${t.titulo}</div>
-          <div class="tarea-agenda-meta">Vence: ${fechaStr}${t.eventos?.nombre ? ' · ' + t.eventos.nombre : ''}</div>
-        </div>`;
-    }).join('');
-  }
-
-  lista.innerHTML = html;
-}
-
-function seleccionarDia(fechaStr) {
-  const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
-  const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
-}
-
-function renderizarListaDia(fechaStr, eventos, reuniones, tareas) {
-  const fecha = new Date(fechaStr + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-  document.getElementById('mes-actual').textContent = fecha;
-
-  const lista = document.getElementById('eventos-mes');
-  const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
-  const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
-  const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
-
-  // Selector de eventos con nombre Y fecha para el formulario de reunión y tarea
-  const opcionesEventos = todosLosEventos.map(e => {
-    const fechaEvStr = new Date(e.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
-    return `<option value="${e.id}">${e.nombre} — ${fechaEvStr}</option>`;
-  }).join('');
-
-  let html = `
-    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
-      <button class="btn-logout" onclick="renderizarCalendario()">← Volver al mes</button>
-      <button class="btn-new btn-sm" onclick="mostrarFormEvento('${fechaStr}')">+ Nuevo evento</button>
-      <button class="btn-agenda btn-sm" onclick="mostrarFormReunion('${fechaStr}')">+ Nueva reunión</button>
-      <button class="btn-agenda btn-sm" onclick="mostrarFormTarea('${fechaStr}')">+ Nueva tarea</button>
-    </div>`;
-
-  if (eventos.length === 0 && reuniones.length === 0 && tareas.length === 0) {
-    html += '<div class="event-empty">No hay actividad este día.</div>';
-  }
-
-  if (eventos.length > 0) {
-    html += `<div class="agenda-seccion-titulo">Eventos</div>`;
-    html += eventos.map((e, i) => `
-      <div class="event-card" onclick="window.location.href='/pages/evento?id=${e.id}'">
-        <div class="event-dot" style="background:${colores[i % colores.length]};"></div>
-        <div class="event-info">
-          <div class="event-name">${e.nombre}</div>
-          <div class="event-date">${e.lugar || '—'}</div>
+    <div class="evento-header">
+      <div class="evento-header-left">
+        <div class="evento-dot" id="evento-dot"></div>
+        <div>
+          <h1 class="evento-titulo" id="evento-titulo">Cargando...</h1>
+          <div class="evento-meta" id="evento-meta"></div>
         </div>
-        <span class="event-badge ${badges[e.estado] || 'badge-borrador'}">${etiquetas[e.estado] || 'Borrador'}</span>
-      </div>`).join('');
-  }
+      </div>
+      <span class="event-badge" id="evento-badge"></span>
+    </div>
 
-  if (reuniones.length > 0) {
-    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Reuniones</div>`;
-    html += reuniones.map(r => `
-      <div class="reunion-card" onclick="window.location.href='/pages/reuniones?id=${r.evento_id}'">
-        <div class="reunion-header"><div class="reunion-titulo">${r.titulo}</div></div>
-        <div class="reunion-fecha">${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
-        ${r.eventos?.nombre ? `<div style="font-size:11px;color:#bbb;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
-      </div>`).join('');
-  }
+    <div class="progreso-wrapper" id="progreso-wrapper">
+      <div class="progreso-info">
+        <span class="progreso-label">Cuenta regresiva</span>
+        <span class="progreso-dias" id="progreso-dias">—</span>
+      </div>
+      <div class="progreso-bar">
+        <div class="progreso-fill" id="progreso-fill"></div>
+      </div>
+    </div>
 
-  if (tareas.length > 0) {
-    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Tareas pendientes</div>`;
-    html += tareas.map(t => `
-      <div class="tarea-agenda-card" onclick="window.location.href='/pages/evento?id=${t.evento_id}'">
-        <div class="tarea-agenda-titulo">✅ ${t.titulo}</div>
-        ${t.eventos?.nombre ? `<div class="tarea-agenda-meta">${t.eventos.nombre}</div>` : ''}
-      </div>`).join('');
-  }
+    <div class="db-metrics">
+      <div class="metric">
+        <div class="metric-label">Presupuestado</div>
+        <div class="metric-value metric-value-sm" id="ev-presupuesto">—</div>
+        <div class="metric-sub">Total estimado</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Gastado</div>
+        <div class="metric-value metric-value-sm" id="ev-gastado">$0</div>
+        <div class="metric-sub">Egresos registrados</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cobrado</div>
+        <div class="metric-value metric-value-sm" id="ev-cobrado">$0</div>
+        <div class="metric-sub">Del cliente</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Saldo</div>
+        <div class="metric-value metric-value-sm" id="ev-saldo">—</div>
+        <div class="metric-sub">Presup. − gastos</div>
+      </div>
+    </div>
 
-  // Formulario nuevo evento
-  html += `
-    <div id="form-evento-agenda" style="display:none;" class="agenda-form-modal">
-      <div class="agenda-form-card">
-        <div class="agenda-form-titulo">Nuevo evento — ${fecha}</div>
-        <div class="form-group">
-          <label class="form-label">Tipo de evento</label>
-          <select id="ag-ev-tipo" class="form-input">
-            <option value="cumpleanos_15">🎀 Cumpleaños 15</option>
-            <option value="cumpleanos_18">🎉 Cumpleaños 18</option>
-            <option value="boda">💍 Boda</option>
-            <option value="corporativo">🏢 Corporativo</option>
-            <option value="alquiler">📦 Alquiler mobiliario</option>
-            <option value="otro">📅 Otro</option>
-          </select>
-        </div>
-        <input type="text" id="ag-ev-nombre" class="form-input" placeholder="Nombre del evento *" style="margin-bottom:8px;" />
-        <input type="text" id="ag-ev-lugar" class="form-input" placeholder="Lugar (opcional)" style="margin-bottom:8px;" />
-        <input type="text" id="ag-ev-contacto" class="form-input" placeholder="Nombre del contacto *" style="margin-bottom:8px;" />
-        <input type="tel" id="ag-ev-telefono" class="form-input" placeholder="Teléfono *" style="margin-bottom:8px;" />
+    <div class="tabs">
+      <button class="tab active" data-tab="info">Info</button>
+      <button class="tab" data-tab="reuniones">Reuniones</button>
+      <button class="tab" data-tab="reservas">Reservas</button>
+      <button class="tab" data-tab="presupuesto">Presupuesto</button>
+      <button class="tab" data-tab="notas">Notas</button>
+      <button class="tab" data-tab="tareas">Tareas</button>
+      <button class="tab" data-tab="chat">Chat</button>
+    </div>
+
+    <!-- Tab Info -->
+    <div class="tab-content active" id="tab-info">
+      <div class="info-card">
+        <div class="info-row"><span class="info-label">Tipo</span><span class="info-value" id="info-tipo">—</span></div>
+        <div class="info-row"><span class="info-label">Nombre</span><span class="info-value" id="info-nombre">—</span></div>
+        <div class="info-row"><span class="info-label">Fecha</span><span class="info-value" id="info-fecha">—</span></div>
+        <div class="info-row"><span class="info-label">Lugar</span><span class="info-value" id="info-lugar">—</span></div>
+        <div class="info-row"><span class="info-label">Estado</span><span class="info-value" id="info-estado">—</span></div>
+      </div>
+      <div class="info-card" style="margin-top:1rem;">
+        <div class="info-row"><span class="info-label">Contacto</span><span class="info-value" id="info-contacto">—</span></div>
+        <div class="info-row"><span class="info-label">Teléfono</span><span class="info-value" id="info-telefono">—</span></div>
+        <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="info-email">—</span></div>
+        <div class="info-row"><span class="info-label">Dirección</span><span class="info-value" id="info-direccion">—</span></div>
+      </div>
+      <button class="btn-exportar" id="btn-exportar">⬇ Exportar resumen PDF</button>
+    </div>
+
+    <!-- Tab Reuniones -->
+    <div class="tab-content" id="tab-reuniones">
+      <div class="section-header">
+        <span class="db-section-title">Próximas reuniones</span>
+        <button class="btn-new btn-sm" id="btn-ir-reuniones">Ver todas →</button>
+      </div>
+      <div class="reunion-preview" id="reunion-preview">
+        <div class="event-empty">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- Tab Reservas -->
+    <div class="tab-content" id="tab-reservas">
+      <div class="section-header">
+        <span class="db-section-title">Reservas</span>
+        <button class="btn-new btn-sm" id="btn-agregar-reserva">+ Agregar</button>
+      </div>
+      <div class="form-nota" id="form-reserva" style="display:none;">
+        <input type="text" id="res-nombre" class="form-input" placeholder="Servicio (ej: Fotografía)" />
+        <input type="text" id="res-contacto" class="form-input" placeholder="Nombre del contacto" />
+        <input type="text" id="res-telefono" class="form-input" placeholder="Teléfono" />
+        <input type="text" id="res-email" class="form-input" placeholder="Email (opcional)" />
+        <select id="res-estado" class="form-input">
+          <option value="borrador">Sin confirmar</option>
+          <option value="progreso">En negociación</option>
+          <option value="confirmado">Confirmado</option>
+        </select>
+        <textarea id="res-notas" class="form-input form-textarea" placeholder="Notas adicionales..." style="min-height:70px;"></textarea>
         <div class="form-nota-actions">
-          <button class="btn-cancel" onclick="cerrarForms()">Cancelar</button>
-          <button class="btn-new" onclick="guardarEventoAgenda('${fechaStr}')">Guardar evento</button>
+          <button class="btn-cancel" id="btn-cancelar-reserva">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-reserva">Guardar reserva</button>
         </div>
       </div>
-    </div>`;
+      <div class="reserva-list" id="reserva-list"><div class="event-empty">Cargando...</div></div>
+    </div>
 
-  // Formulario nueva reunión — con nombre Y fecha del evento
-  html += `
-    <div id="form-reunion-agenda" style="display:none;" class="agenda-form-modal">
-      <div class="agenda-form-card">
-        <div class="agenda-form-titulo">Nueva reunión — ${fecha}</div>
-        <input type="text" id="ag-reu-titulo" class="form-input" placeholder="Título de la reunión *" style="margin-bottom:8px;" />
-        <input type="time" id="ag-reu-hora" class="form-input" style="margin-bottom:8px;" />
-        <input type="text" id="ag-reu-lugar" class="form-input" placeholder="Lugar (opcional)" style="margin-bottom:8px;" />
+    <!-- Tab Presupuesto -->
+    <div class="tab-content" id="tab-presupuesto">
+
+      <div class="pres-bloque-titulo">Cobros del cliente</div>
+      <div class="section-header">
+        <span class="db-section-title">Cuotas y pagos</span>
+        <button class="btn-new btn-sm" id="btn-agregar-cobro">+ Agregar</button>
+      </div>
+      <div class="form-nota" id="form-cobro" style="display:none;">
+        <input type="text" id="cob-concepto" class="form-input" placeholder="Concepto (ej: Seña 30%)" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Monto</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="cob-monto" class="form-input with-prefix" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vencimiento</label>
+            <input type="date" id="cob-vencimiento" class="form-input" />
+          </div>
+        </div>
+        <select id="cob-estado" class="form-input">
+          <option value="pendiente">Pendiente de cobro</option>
+          <option value="cobrado">Cobrado</option>
+        </select>
+        <input type="date" id="cob-fecha-cobro" class="form-input" style="display:none;" />
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-cobro">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-cobro">Guardar</button>
+        </div>
+      </div>
+      <div class="cobro-list" id="cobro-list"><div class="event-empty">Cargando...</div></div>
+
+      <div class="pres-bloque-titulo" style="margin-top:1.5rem;">Gastos y egresos</div>
+      <div class="section-header">
+        <span class="db-section-title">Movimientos</span>
+        <button class="btn-new btn-sm" id="btn-agregar-movimiento">+ Agregar</button>
+      </div>
+      <div class="form-nota" id="form-movimiento" style="display:none;">
+        <input type="text" id="mov-concepto" class="form-input" placeholder="Concepto (ej: Seña fotografía)" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select id="mov-tipo" class="form-input">
+              <option value="egreso">Egreso (gasto)</option>
+              <option value="ingreso">Ingreso (cobro)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monto</label>
+            <div class="input-prefix">
+              <span class="prefix">$</span>
+              <input type="number" id="mov-monto" class="form-input with-prefix" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <input type="date" id="mov-fecha" class="form-input" />
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-movimiento">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-movimiento">Guardar movimiento</button>
+        </div>
+      </div>
+      <div class="movimiento-list" id="movimiento-list"><div class="event-empty">Cargando...</div></div>
+
+      <div class="pres-bloque-titulo" style="margin-top:1.5rem;">Presupuesto formal</div>
+      <div id="pres-formal-preview">
+        <div class="event-empty">No hay presupuesto formal generado todavía.</div>
+      </div>
+      <button class="btn-exportar" id="btn-presupuesto" style="margin-top:0.75rem;">📄 Crear / editar presupuesto formal</button>
+
+    </div>
+
+    <!-- Tab Notas -->
+    <div class="tab-content" id="tab-notas">
+      <div class="section-header">
+        <span class="db-section-title">Notas</span>
+        <button class="btn-new btn-sm" id="btn-agregar-nota">+ Agregar</button>
+      </div>
+      <div class="form-nota" id="form-nota" style="display:none;">
+        <input type="text" id="nota-titulo-input" class="form-input" placeholder="Título de la nota" />
+        <textarea id="nota-texto-input" class="form-input form-textarea" placeholder="Escribí tu nota acá..."></textarea>
         <div class="form-group">
-          <label class="form-label">Evento relacionado</label>
-          <select id="ag-reu-evento" class="form-input">${opcionesEventos}</select>
+          <label class="form-label">Imagen (opcional)</label>
+          <input type="file" id="nota-imagen-input" class="form-input" accept="image/*" />
         </div>
-        <textarea id="ag-reu-desc" class="form-input form-textarea" placeholder="Descripción (opcional)" style="min-height:60px;margin-top:8px;"></textarea>
-        <div class="form-nota-actions" style="margin-top:8px;">
-          <button class="btn-cancel" onclick="cerrarForms()">Cancelar</button>
-          <button class="btn-new" onclick="guardarReunionAgenda('${fechaStr}')">Guardar reunión</button>
-        </div>
-      </div>
-    </div>`;
-
-  // Formulario nueva tarea — con nombre Y fecha del evento
-  html += `
-    <div id="form-tarea-agenda" style="display:none;" class="agenda-form-modal">
-      <div class="agenda-form-card">
-        <div class="agenda-form-titulo">Nueva tarea — vence ${fecha}</div>
-        <input type="text" id="ag-tarea-titulo" class="form-input" placeholder="Descripción de la tarea *" style="margin-bottom:8px;" />
         <div class="form-group">
-          <label class="form-label">Evento relacionado</label>
-          <select id="ag-tarea-evento" class="form-input">${opcionesEventos}</select>
+          <label class="form-label">Audio (mp3, m4a, ogg)</label>
+          <input type="file" id="nota-audio-input" class="form-input" accept="audio/*" />
         </div>
-        <div class="form-nota-actions" style="margin-top:8px;">
-          <button class="btn-cancel" onclick="cerrarForms()">Cancelar</button>
-          <button class="btn-new" onclick="guardarTareaAgenda('${fechaStr}')">Guardar tarea</button>
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-nota">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-nota">Guardar nota</button>
         </div>
       </div>
-    </div>`;
+      <div class="nota-list" id="nota-list"><div class="event-empty">Cargando...</div></div>
+    </div>
 
-  lista.innerHTML = html;
-}
+    <!-- Tab Tareas -->
+    <div class="tab-content" id="tab-tareas">
+      <div class="section-header">
+        <span class="db-section-title">Checklist</span>
+        <button class="btn-new btn-sm" id="btn-agregar-tarea">+ Agregar</button>
+      </div>
+      <div class="progreso-tareas" id="progreso-tareas"></div>
+      <div class="form-nota" id="form-tarea" style="display:none;">
+        <input type="text" id="tarea-titulo-input" class="form-input" placeholder="Descripción de la tarea *" />
+        <div class="form-group">
+          <label class="form-label">Fecha de vencimiento (opcional)</label>
+          <input type="date" id="tarea-vencimiento-input" class="form-input" />
+        </div>
+        <div class="form-nota-actions">
+          <button class="btn-cancel" id="btn-cancelar-tarea">Cancelar</button>
+          <button class="btn-new" id="btn-guardar-tarea">Agregar tarea</button>
+        </div>
+      </div>
+      <div class="tarea-list" id="tarea-list">
+        <div class="event-empty">Cargando...</div>
+      </div>
+    </div>
 
-function mostrarFormEvento() {
-  cerrarForms();
-  document.getElementById('form-evento-agenda').style.display = 'block';
-}
+    <!-- Tab Chat -->
+    <div class="tab-content" id="tab-chat">
+      <div class="chat-wrapper">
+        <div class="chat-mensajes" id="chat-mensajes">
+          <div class="event-empty">Cargando...</div>
+        </div>
+        <div class="chat-input-wrapper">
+          <input type="text" id="chat-input" class="form-input" placeholder="Escribí un comentario..." />
+          <button class="btn-new" id="btn-enviar-chat">Enviar</button>
+        </div>
+      </div>
+    </div>
 
-function mostrarFormReunion() {
-  cerrarForms();
-  if (todosLosEventos.length === 0) {
-    toast('Primero creá al menos un evento para asociar la reunión.', 'error');
-    return;
-  }
-  document.getElementById('form-reunion-agenda').style.display = 'block';
-}
+  </div>
 
-function mostrarFormTarea() {
-  cerrarForms();
-  if (todosLosEventos.length === 0) {
-    toast('Primero creá al menos un evento para asociar la tarea.', 'error');
-    return;
-  }
-  document.getElementById('form-tarea-agenda').style.display = 'block';
-}
-
-function cerrarForms() {
-  ['form-evento-agenda','form-reunion-agenda','form-tarea-agenda'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-}
-
-async function guardarEventoAgenda(fechaStr) {
-  const nombre = document.getElementById('ag-ev-nombre').value.trim();
-  const tipo = document.getElementById('ag-ev-tipo').value;
-  const lugar = document.getElementById('ag-ev-lugar').value.trim();
-  const contacto_nombre = document.getElementById('ag-ev-contacto').value.trim();
-  const contacto_telefono = document.getElementById('ag-ev-telefono').value.trim();
-
-  if (!nombre) { toast('Por favor ingresá el nombre del evento.', 'error'); return; }
-  if (!contacto_nombre) { toast('Por favor ingresá el nombre del contacto.', 'error'); return; }
-  if (!contacto_telefono) { toast('Por favor ingresá el teléfono.', 'error'); return; }
-
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  const { error } = await supabaseClient.from('eventos').insert({
-    nombre, tipo, fecha: fechaStr, estado: 'borrador',
-    lugar, contacto_nombre, contacto_telefono,
-    user_id: session.user.id
-  });
-
-  if (error) { toast('Error al guardar.', 'error'); return; }
-  toast('Evento creado');
-  await cargarDatos();
-  const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
-  const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
-}
-
-async function guardarReunionAgenda(fechaStr) {
-  const titulo = document.getElementById('ag-reu-titulo').value.trim();
-  const hora = document.getElementById('ag-reu-hora').value;
-  const lugar = document.getElementById('ag-reu-lugar').value.trim();
-  const eventoId = document.getElementById('ag-reu-evento').value;
-  const descripcion = document.getElementById('ag-reu-desc').value.trim();
-
-  if (!titulo) { toast('Por favor ingresá el título.', 'error'); return; }
-  if (!hora) { toast('Por favor seleccioná la hora.', 'error'); return; }
-
-  const { error } = await supabaseClient.from('reuniones').insert({
-    titulo, fecha: fechaStr, hora, lugar,
-    evento_id: parseInt(eventoId), descripcion
-  });
-
-  if (error) { toast('Error al guardar.', 'error'); return; }
-  toast('Reunión creada');
-  await cargarDatos();
-  const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
-  const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
-}
-
-async function guardarTareaAgenda(fechaStr) {
-  const titulo = document.getElementById('ag-tarea-titulo').value.trim();
-  const eventoId = document.getElementById('ag-tarea-evento').value;
-
-  if (!titulo) { toast('Por favor ingresá la tarea.', 'error'); return; }
-
-  const { error } = await supabaseClient.from('tareas').insert({
-    titulo, evento_id: parseInt(eventoId), fecha_vencimiento: fechaStr
-  });
-
-  if (error) { toast('Error al guardar.', 'error'); return; }
-  toast('Tarea creada');
-  await cargarDatos();
-  const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
-  const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
-}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/supabase.js"></script>
+  <script src="../../js/evento.js"></script>
+</body>
+</html>
