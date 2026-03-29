@@ -92,7 +92,8 @@ async function cargarEventos() {
   todosLosEventos = eventos || [];
   actualizarMetricas(todosLosEventos);
   aplicarVista('proximos');
-  renderizarGraficos(todosLosEventos);
+  // Gráficos al final — se renderizan después de los eventos
+  setTimeout(() => renderizarGraficos(todosLosEventos), 100);
 }
 
 function actualizarMetricas(eventos) {
@@ -221,11 +222,10 @@ function renderizarGraficos(eventos) {
     });
   }
 
-  // Gráfico finanzas — necesita datos de movimientos
-  cargarGraficoFinanzas(eventos, labels, ahora);
+  cargarGraficoFinanzas(labels, ahora);
 }
 
-async function cargarGraficoFinanzas(eventos, labels, ahora) {
+async function cargarGraficoFinanzas(labels, ahora) {
   const { data: movimientos } = await supabaseClient.from('movimientos').select('*');
   const { data: cobros } = await supabaseClient.from('cobros').select('*').eq('estado', 'cobrado');
 
@@ -238,6 +238,7 @@ async function cargarGraficoFinanzas(eventos, labels, ahora) {
     const anio = d.getFullYear();
 
     const ingresos = (cobros || []).filter(c => {
+      if (!c.fecha_cobro) return false;
       const f = new Date(c.fecha_cobro + 'T12:00:00');
       return f.getMonth() === mes && f.getFullYear() === anio;
     }).reduce((a, c) => a + c.monto, 0);
@@ -284,11 +285,7 @@ async function cargarGraficoFinanzas(eventos, labels, ahora) {
       options: {
         responsive: true,
         plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: { font: { size: 11 }, boxWidth: 12 }
-          }
+          legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } }
         },
         scales: {
           y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },

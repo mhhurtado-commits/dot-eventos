@@ -2,6 +2,7 @@ let mesActual = new Date().getMonth();
 let anioActual = new Date().getFullYear();
 let todosLosEventos = [];
 let todasLasReuniones = [];
+let todasLasTareas = [];
 
 function fechaHoyLocal() {
   const ahora = new Date();
@@ -42,12 +43,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function cargarDatos() {
-  const [{ data: eventos }, { data: reuniones }] = await Promise.all([
+  const [{ data: eventos }, { data: reuniones }, { data: tareas }] = await Promise.all([
     supabaseClient.from('eventos').select('*').order('fecha', { ascending: true }),
-    supabaseClient.from('reuniones').select('*, eventos(nombre)').order('fecha').order('hora')
+    supabaseClient.from('reuniones').select('*, eventos(nombre, fecha)').order('fecha').order('hora'),
+    supabaseClient.from('tareas').select('*, eventos(nombre, fecha)').eq('completada', false)
   ]);
   todosLosEventos = eventos || [];
   todasLasReuniones = reuniones || [];
+  todasLasTareas = tareas || [];
 }
 
 function renderizarCalendario() {
@@ -68,6 +71,13 @@ function renderizarCalendario() {
     return f.getMonth() === mesActual && f.getFullYear() === anioActual;
   });
 
+  // Tareas con vencimiento este mes
+  const tareasDelMes = todasLasTareas.filter(t => {
+    if (!t.fecha_vencimiento) return false;
+    const f = new Date(t.fecha_vencimiento + 'T12:00:00');
+    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
+  });
+
   const eventosPorDia = {};
   eventosDelMes.forEach(e => {
     const dia = new Date(e.fecha + 'T12:00:00').getDate();
@@ -80,6 +90,13 @@ function renderizarCalendario() {
     const dia = new Date(r.fecha + 'T12:00:00').getDate();
     if (!reunionesPorDia[dia]) reunionesPorDia[dia] = [];
     reunionesPorDia[dia].push(r);
+  });
+
+  const tareasPorDia = {};
+  tareasDelMes.forEach(t => {
+    const dia = new Date(t.fecha_vencimiento + 'T12:00:00').getDate();
+    if (!tareasPorDia[dia]) tareasPorDia[dia] = [];
+    tareasPorDia[dia].push(t);
   });
 
   const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
@@ -97,37 +114,37 @@ function renderizarCalendario() {
     const esHoy = fechaDia === hoy;
     const tieneEventos = eventosPorDia[dia];
     const tieneReuniones = reunionesPorDia[dia];
+    const tieneTareas = tareasPorDia[dia];
     let clases = 'cal-dia';
     if (esHoy) clases += ' hoy';
-    if (tieneEventos || tieneReuniones) clases += ' con-evento';
+    if (tieneEventos || tieneReuniones || tieneTareas) clases += ' con-evento';
 
     const puntosEventos = tieneEventos
       ? tieneEventos.map((e, i) => `<span class="cal-punto" style="background:${colores[i % colores.length]}"></span>`).join('')
       : '';
-    const puntosReuniones = tieneReuniones
-      ? `<span class="cal-punto reunion-punto"></span>`
-      : '';
+    const puntosReuniones = tieneReuniones ? `<span class="cal-punto reunion-punto"></span>` : '';
+    const puntosTareas = tieneTareas ? `<span class="cal-punto tarea-punto"></span>` : '';
 
     html += `
       <div class="${clases}" onclick="seleccionarDia('${fechaDia}')">
         <span class="cal-numero">${dia}</span>
-        ${(tieneEventos || tieneReuniones) ? `<div class="cal-puntos">${puntosEventos}${puntosReuniones}</div>` : ''}
+        ${(tieneEventos || tieneReuniones || tieneTareas) ? `<div class="cal-puntos">${puntosEventos}${puntosReuniones}${puntosTareas}</div>` : ''}
       </div>`;
   }
 
   grid.innerHTML = html;
-  renderizarListaMes(eventosDelMes, reunionesDelMes);
+  renderizarListaMes(eventosDelMes, reunionesDelMes, tareasDelMes);
 }
 
-function renderizarListaMes(eventos, reuniones) {
+function renderizarListaMes(eventos, reuniones, tareas) {
   const lista = document.getElementById('eventos-mes');
   const hoy = fechaHoyLocal();
   const colores = ['#7F77DD', '#1D9E75', '#EF9F27', '#D85A30', '#378ADD'];
   const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
   const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
 
-  if (eventos.length === 0 && reuniones.length === 0) {
-    lista.innerHTML = '<div class="event-empty">No hay eventos ni reuniones este mes.</div>';
+  if (eventos.length === 0 && reuniones.length === 0 && tareas.length === 0) {
+    lista.innerHTML = '<div class="event-empty">No hay actividad este mes.</div>';
     return;
   }
 
@@ -166,16 +183,31 @@ function renderizarListaMes(eventos, reuniones) {
     }).join('');
   }
 
+  if (tareas.length > 0) {
+    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Tareas pendientes con vencimiento</div>`;
+    html += tareas.sort((a, b) => new Date(a.fecha_vencimiento) - new Date(b.fecha_vencimiento)).map(t => {
+      const fechaStr = new Date(t.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+      const esHoy = t.fecha_vencimiento === hoy;
+      const estaVencida = t.fecha_vencimiento < hoy;
+      return `
+        <div class="tarea-agenda-card ${estaVencida ? 'vencida' : ''} ${esHoy ? 'hoy-tarea' : ''}" onclick="window.location.href='/pages/evento?id=${t.evento_id}'">
+          <div class="tarea-agenda-titulo">✅ ${t.titulo}</div>
+          <div class="tarea-agenda-meta">Vence: ${fechaStr}${t.eventos?.nombre ? ' · ' + t.eventos.nombre : ''}</div>
+        </div>`;
+    }).join('');
+  }
+
   lista.innerHTML = html;
 }
 
 function seleccionarDia(fechaStr) {
   const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
   const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia);
+  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
+  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
 }
 
-function renderizarListaDia(fechaStr, eventos, reuniones) {
+function renderizarListaDia(fechaStr, eventos, reuniones, tareas) {
   const fecha = new Date(fechaStr + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById('mes-actual').textContent = fecha;
 
@@ -184,15 +216,22 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
   const badges = { confirmado: 'badge-confirmado', progreso: 'badge-progreso', borrador: 'badge-borrador' };
   const etiquetas = { confirmado: 'Confirmado', progreso: 'En progreso', borrador: 'Borrador' };
 
+  // Selector de eventos con nombre Y fecha para el formulario de reunión y tarea
+  const opcionesEventos = todosLosEventos.map(e => {
+    const fechaEvStr = new Date(e.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `<option value="${e.id}">${e.nombre} — ${fechaEvStr}</option>`;
+  }).join('');
+
   let html = `
     <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
       <button class="btn-logout" onclick="renderizarCalendario()">← Volver al mes</button>
       <button class="btn-new btn-sm" onclick="mostrarFormEvento('${fechaStr}')">+ Nuevo evento</button>
       <button class="btn-agenda btn-sm" onclick="mostrarFormReunion('${fechaStr}')">+ Nueva reunión</button>
+      <button class="btn-agenda btn-sm" onclick="mostrarFormTarea('${fechaStr}')">+ Nueva tarea</button>
     </div>`;
 
-  if (eventos.length === 0 && reuniones.length === 0) {
-    html += '<div class="event-empty">No hay eventos ni reuniones este día.</div>';
+  if (eventos.length === 0 && reuniones.length === 0 && tareas.length === 0) {
+    html += '<div class="event-empty">No hay actividad este día.</div>';
   }
 
   if (eventos.length > 0) {
@@ -212,11 +251,18 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
     html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Reuniones</div>`;
     html += reuniones.map(r => `
       <div class="reunion-card" onclick="window.location.href='/pages/reuniones?id=${r.evento_id}'">
-        <div class="reunion-header">
-          <div class="reunion-titulo">${r.titulo}</div>
-        </div>
+        <div class="reunion-header"><div class="reunion-titulo">${r.titulo}</div></div>
         <div class="reunion-fecha">${r.hora.substring(0,5)}${r.lugar ? ' · 📍 ' + r.lugar : ''}</div>
         ${r.eventos?.nombre ? `<div style="font-size:11px;color:#bbb;margin-top:3px;">📅 ${r.eventos.nombre}</div>` : ''}
+      </div>`).join('');
+  }
+
+  if (tareas.length > 0) {
+    html += `<div class="agenda-seccion-titulo" style="margin-top:1rem;">Tareas pendientes</div>`;
+    html += tareas.map(t => `
+      <div class="tarea-agenda-card" onclick="window.location.href='/pages/evento?id=${t.evento_id}'">
+        <div class="tarea-agenda-titulo">✅ ${t.titulo}</div>
+        ${t.eventos?.nombre ? `<div class="tarea-agenda-meta">${t.eventos.nombre}</div>` : ''}
       </div>`).join('');
   }
 
@@ -247,7 +293,7 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
       </div>
     </div>`;
 
-  // Formulario nueva reunión
+  // Formulario nueva reunión — con nombre Y fecha del evento
   html += `
     <div id="form-reunion-agenda" style="display:none;" class="agenda-form-modal">
       <div class="agenda-form-card">
@@ -257,9 +303,7 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
         <input type="text" id="ag-reu-lugar" class="form-input" placeholder="Lugar (opcional)" style="margin-bottom:8px;" />
         <div class="form-group">
           <label class="form-label">Evento relacionado</label>
-          <select id="ag-reu-evento" class="form-input">
-            ${todosLosEventos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('')}
-          </select>
+          <select id="ag-reu-evento" class="form-input">${opcionesEventos}</select>
         </div>
         <textarea id="ag-reu-desc" class="form-input form-textarea" placeholder="Descripción (opcional)" style="min-height:60px;margin-top:8px;"></textarea>
         <div class="form-nota-actions" style="margin-top:8px;">
@@ -269,15 +313,32 @@ function renderizarListaDia(fechaStr, eventos, reuniones) {
       </div>
     </div>`;
 
+  // Formulario nueva tarea — con nombre Y fecha del evento
+  html += `
+    <div id="form-tarea-agenda" style="display:none;" class="agenda-form-modal">
+      <div class="agenda-form-card">
+        <div class="agenda-form-titulo">Nueva tarea — vence ${fecha}</div>
+        <input type="text" id="ag-tarea-titulo" class="form-input" placeholder="Descripción de la tarea *" style="margin-bottom:8px;" />
+        <div class="form-group">
+          <label class="form-label">Evento relacionado</label>
+          <select id="ag-tarea-evento" class="form-input">${opcionesEventos}</select>
+        </div>
+        <div class="form-nota-actions" style="margin-top:8px;">
+          <button class="btn-cancel" onclick="cerrarForms()">Cancelar</button>
+          <button class="btn-new" onclick="guardarTareaAgenda('${fechaStr}')">Guardar tarea</button>
+        </div>
+      </div>
+    </div>`;
+
   lista.innerHTML = html;
 }
 
-function mostrarFormEvento(fechaStr) {
+function mostrarFormEvento() {
   cerrarForms();
   document.getElementById('form-evento-agenda').style.display = 'block';
 }
 
-function mostrarFormReunion(fechaStr) {
+function mostrarFormReunion() {
   cerrarForms();
   if (todosLosEventos.length === 0) {
     toast('Primero creá al menos un evento para asociar la reunión.', 'error');
@@ -286,11 +347,20 @@ function mostrarFormReunion(fechaStr) {
   document.getElementById('form-reunion-agenda').style.display = 'block';
 }
 
+function mostrarFormTarea() {
+  cerrarForms();
+  if (todosLosEventos.length === 0) {
+    toast('Primero creá al menos un evento para asociar la tarea.', 'error');
+    return;
+  }
+  document.getElementById('form-tarea-agenda').style.display = 'block';
+}
+
 function cerrarForms() {
-  const fe = document.getElementById('form-evento-agenda');
-  const fr = document.getElementById('form-reunion-agenda');
-  if (fe) fe.style.display = 'none';
-  if (fr) fr.style.display = 'none';
+  ['form-evento-agenda','form-reunion-agenda','form-tarea-agenda'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 async function guardarEventoAgenda(fechaStr) {
@@ -305,7 +375,6 @@ async function guardarEventoAgenda(fechaStr) {
   if (!contacto_telefono) { toast('Por favor ingresá el teléfono.', 'error'); return; }
 
   const { data: { session } } = await supabaseClient.auth.getSession();
-
   const { error } = await supabaseClient.from('eventos').insert({
     nombre, tipo, fecha: fechaStr, estado: 'borrador',
     lugar, contacto_nombre, contacto_telefono,
@@ -313,12 +382,12 @@ async function guardarEventoAgenda(fechaStr) {
   });
 
   if (error) { toast('Error al guardar.', 'error'); return; }
-
   toast('Evento creado');
   await cargarDatos();
   const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
   const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia);
+  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
+  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
 }
 
 async function guardarReunionAgenda(fechaStr) {
@@ -337,10 +406,29 @@ async function guardarReunionAgenda(fechaStr) {
   });
 
   if (error) { toast('Error al guardar.', 'error'); return; }
-
   toast('Reunión creada');
   await cargarDatos();
   const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
   const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
-  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia);
+  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
+  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
+}
+
+async function guardarTareaAgenda(fechaStr) {
+  const titulo = document.getElementById('ag-tarea-titulo').value.trim();
+  const eventoId = document.getElementById('ag-tarea-evento').value;
+
+  if (!titulo) { toast('Por favor ingresá la tarea.', 'error'); return; }
+
+  const { error } = await supabaseClient.from('tareas').insert({
+    titulo, evento_id: parseInt(eventoId), fecha_vencimiento: fechaStr
+  });
+
+  if (error) { toast('Error al guardar.', 'error'); return; }
+  toast('Tarea creada');
+  await cargarDatos();
+  const eventosDelDia = todosLosEventos.filter(e => e.fecha === fechaStr);
+  const reunionesDelDia = todasLasReuniones.filter(r => r.fecha === fechaStr);
+  const tareasDelDia = todasLasTareas.filter(t => t.fecha_vencimiento === fechaStr);
+  renderizarListaDia(fechaStr, eventosDelDia, reunionesDelDia, tareasDelDia);
 }

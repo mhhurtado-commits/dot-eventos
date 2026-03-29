@@ -7,6 +7,8 @@ async function cargarNotificaciones() {
   const en7diasStr = en7dias.getFullYear() + '-' + String(en7dias.getMonth() + 1).padStart(2, '0') + '-' + String(en7dias.getDate()).padStart(2, '0');
   const en30dias = new Date(ahora.getTime() + 30 * 24 * 60 * 60 * 1000);
   const en30diasStr = en30dias.getFullYear() + '-' + String(en30dias.getMonth() + 1).padStart(2, '0') + '-' + String(en30dias.getDate()).padStart(2, '0');
+  const en2dias = new Date(ahora.getTime() + 2 * 24 * 60 * 60 * 1000);
+  const en2diasStr = en2dias.getFullYear() + '-' + String(en2dias.getMonth() + 1).padStart(2, '0') + '-' + String(en2dias.getDate()).padStart(2, '0');
 
   const notifs = [];
 
@@ -22,12 +24,11 @@ async function cargarNotificaciones() {
       tipo: 'error',
       icono: '⚠️',
       titulo: 'Cobro vencido',
-      texto: `${c.concepto} — $${c.monto.toLocaleString('es-AR')} (${c.eventos?.nombre})`,
-      fecha: c.fecha_vencimiento
+      texto: `${c.concepto} — $${c.monto.toLocaleString('es-AR')} (${c.eventos?.nombre})`
     });
   });
 
-  // Cobros próximos a vencer
+  // Cobros próximos a vencer (7 días)
   const { data: cobrosProximos } = await supabaseClient
     .from('cobros')
     .select('*, eventos(nombre)')
@@ -40,8 +41,7 @@ async function cargarNotificaciones() {
       tipo: 'warning',
       icono: '💰',
       titulo: 'Cobro próximo',
-      texto: `${c.concepto} vence el ${new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} (${c.eventos?.nombre})`,
-      fecha: c.fecha_vencimiento
+      texto: `${c.concepto} vence el ${new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} (${c.eventos?.nombre})`
     });
   });
 
@@ -60,12 +60,11 @@ async function cargarNotificaciones() {
       tipo: 'info',
       icono: '📅',
       titulo: 'Reunión mañana',
-      texto: `${r.titulo} a las ${r.hora.substring(0, 5)} (${r.eventos?.nombre})`,
-      fecha: mananaStr
+      texto: `${r.titulo} a las ${r.hora.substring(0, 5)} (${r.eventos?.nombre})`
     });
   });
 
-  // Eventos próximos en 30 días
+  // Eventos próximos (30 días)
   const { data: eventosProximos } = await supabaseClient
     .from('eventos')
     .select('*')
@@ -79,10 +78,34 @@ async function cargarNotificaciones() {
       tipo: dias <= 7 ? 'warning' : 'info',
       icono: dias <= 7 ? '🔥' : '📌',
       titulo: dias === 0 ? '¡Evento hoy!' : `Evento en ${dias} días`,
-      texto: `${e.nombre}${e.lugar ? ' · ' + e.lugar : ''}`,
-      fecha: e.fecha
+      texto: `${e.nombre}${e.lugar ? ' · ' + e.lugar : ''}`
     });
   });
+
+  // Tareas pendientes en eventos que ocurren en 2 días o menos
+  const { data: eventosCercanos } = await supabaseClient
+    .from('eventos')
+    .select('id, nombre, fecha')
+    .gte('fecha', hoy)
+    .lte('fecha', en2diasStr);
+
+  for (const evento of (eventosCercanos || [])) {
+    const { data: tareas } = await supabaseClient
+      .from('tareas')
+      .select('*')
+      .eq('evento_id', evento.id)
+      .eq('completada', false);
+
+    if (tareas && tareas.length > 0) {
+      const dias = Math.ceil((new Date(evento.fecha + 'T12:00:00') - ahora) / (1000 * 60 * 60 * 24));
+      notifs.push({
+        tipo: 'error',
+        icono: '✅',
+        titulo: `${tareas.length} tarea${tareas.length > 1 ? 's' : ''} pendiente${tareas.length > 1 ? 's' : ''}`,
+        texto: `${evento.nombre} es en ${dias === 0 ? 'hoy' : dias + ' día' + (dias > 1 ? 's' : '')} — ${tareas.map(t => t.titulo).join(', ')}`
+      });
+    }
+  }
 
   notificacionesCache = notifs;
   actualizarBadge(notifs.length);
@@ -122,17 +145,8 @@ function renderizarNotificaciones() {
     return;
   }
 
-  const coloresTipo = {
-    error: '#FCEBEB',
-    warning: '#faeeda',
-    info: '#f4f3ff'
-  };
-
-  const coloresTexto = {
-    error: '#A32D2D',
-    warning: '#854F0B',
-    info: '#534AB7'
-  };
+  const coloresTipo = { error: '#FCEBEB', warning: '#faeeda', info: '#f4f3ff' };
+  const coloresTexto = { error: '#A32D2D', warning: '#854F0B', info: '#534AB7' };
 
   panel.innerHTML = `
     <div class="notif-header">
@@ -151,7 +165,6 @@ function renderizarNotificaciones() {
     </div>`;
 }
 
-// Cerrar panel al hacer clic afuera
 document.addEventListener('click', (e) => {
   const panel = document.getElementById('notif-panel');
   const btn = document.getElementById('notif-btn');

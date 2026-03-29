@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (error || !evento) { window.location.href = '/pages/dashboard'; return; }
   eventoActual = evento;
 
-  // Encabezado
   document.getElementById('evento-dot').style.background = colores[0];
   document.getElementById('evento-titulo').textContent = evento.nombre;
   const fecha = new Date(evento.fecha + 'T12:00:00');
@@ -47,10 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   badge.textContent = etiquetas[evento.estado] || 'Borrador';
   badge.className = 'event-badge ' + (badges[evento.estado] || 'badge-borrador');
 
-  // Progreso
   renderizarProgreso(fecha);
 
-  // Info
   document.getElementById('info-tipo').textContent = tiposLabel[evento.tipo] || '📅 Otro';
   document.getElementById('info-nombre').textContent = evento.nombre;
   document.getElementById('info-fecha').textContent = fechaStr;
@@ -61,8 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('info-email').textContent = evento.contacto_email || '—';
   document.getElementById('info-direccion').textContent = evento.contacto_direccion || '—';
 
-  // Cargar todo en paralelo
-    await Promise.all([
+  await Promise.all([
     cargarReunionesPreview(),
     cargarReservas(),
     cargarMovimientos(),
@@ -123,6 +119,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('btn-guardar-nota').addEventListener('click', guardarNota);
 
+  // Tareas
+  document.getElementById('btn-agregar-tarea').addEventListener('click', () => {
+    document.getElementById('form-tarea').style.display = 'flex';
+  });
+  document.getElementById('btn-cancelar-tarea').addEventListener('click', () => {
+    document.getElementById('form-tarea').style.display = 'none';
+    document.getElementById('tarea-titulo-input').value = '';
+    document.getElementById('tarea-vencimiento-input').value = '';
+  });
+  document.getElementById('btn-guardar-tarea').addEventListener('click', async () => {
+    const titulo = document.getElementById('tarea-titulo-input').value.trim();
+    const fecha_vencimiento = document.getElementById('tarea-vencimiento-input').value || null;
+    if (!titulo) { toast('Por favor ingresá la tarea.', 'error'); return; }
+    await supabaseClient.from('tareas').insert({
+      evento_id: eventoActual.id, titulo, fecha_vencimiento
+    });
+    document.getElementById('form-tarea').style.display = 'none';
+    document.getElementById('tarea-titulo-input').value = '';
+    document.getElementById('tarea-vencimiento-input').value = '';
+    await cargarTareas();
+    toast('Tarea agregada');
+  });
+
+  // Chat
+  document.getElementById('btn-enviar-chat').addEventListener('click', enviarMensaje);
+  document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') enviarMensaje();
+  });
+
   // Tabs
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -135,29 +160,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btn-editar').addEventListener('click', () => {
     window.location.href = '/pages/editar-evento?id=' + eventoActual.id;
-  });
-  // Tareas
-  document.getElementById('btn-agregar-tarea').addEventListener('click', () => {
-    document.getElementById('form-tarea').style.display = 'flex';
-  });
-  document.getElementById('btn-cancelar-tarea').addEventListener('click', () => {
-    document.getElementById('form-tarea').style.display = 'none';
-    document.getElementById('tarea-titulo-input').value = '';
-  });
-  document.getElementById('btn-guardar-tarea').addEventListener('click', async () => {
-    const titulo = document.getElementById('tarea-titulo-input').value.trim();
-    if (!titulo) { toast('Por favor ingresá la tarea.', 'error'); return; }
-    await supabaseClient.from('tareas').insert({ evento_id: eventoActual.id, titulo });
-    document.getElementById('form-tarea').style.display = 'none';
-    document.getElementById('tarea-titulo-input').value = '';
-    await cargarTareas();
-    toast('Tarea agregada');
-  });
-
-  // Chat
-  document.getElementById('btn-enviar-chat').addEventListener('click', enviarMensaje);
-  document.getElementById('chat-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') enviarMensaje();
   });
 
   document.getElementById('btn-exportar').addEventListener('click', exportarPDF);
@@ -188,7 +190,6 @@ function actualizarMetricasFinancieras(movimientos, cobros) {
   const gastado = (movimientos || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
   const cobrado = (cobros || []).filter(c => c.estado === 'cobrado').reduce((a, c) => a + c.monto, 0);
   const saldo = (eventoActual.presupuesto || 0) - gastado;
-
   document.getElementById('ev-presupuesto').textContent = '$' + (eventoActual.presupuesto || 0).toLocaleString('es-AR');
   document.getElementById('ev-gastado').textContent = '$' + gastado.toLocaleString('es-AR');
   document.getElementById('ev-cobrado').textContent = '$' + cobrado.toLocaleString('es-AR');
@@ -202,7 +203,6 @@ function actualizarMetricasFinancieras(movimientos, cobros) {
 async function cargarReunionesPreview() {
   const ahora = new Date();
   const hoy = ahora.getFullYear() + '-' + String(ahora.getMonth() + 1).padStart(2, '0') + '-' + String(ahora.getDate()).padStart(2, '0');
-
   const { data: reuniones } = await supabaseClient
     .from('reuniones').select('*')
     .eq('evento_id', eventoActual.id)
@@ -215,7 +215,6 @@ async function cargarReunionesPreview() {
     lista.innerHTML = `<div class="event-empty">No hay reuniones próximas. <a href="/pages/reuniones?id=${eventoActual.id}" style="color:#7F77DD;">Agregar</a></div>`;
     return;
   }
-
   lista.innerHTML = reuniones.map(r => {
     const esHoy = r.fecha === hoy;
     return `
@@ -234,13 +233,11 @@ async function cargarReunionesPreview() {
 async function cargarReservas() {
   const { data: reservas } = await supabaseClient
     .from('reservas').select('*').eq('evento_id', eventoActual.id).order('created_at');
-
   const lista = document.getElementById('reserva-list');
   if (!reservas || reservas.length === 0) {
     lista.innerHTML = '<div class="event-empty">No hay reservas todavía.</div>';
     return;
   }
-
   lista.innerHTML = reservas.map(r => `
     <div class="reserva-card">
       <div class="reserva-header">
@@ -267,14 +264,11 @@ async function guardarReserva() {
   const email = document.getElementById('res-email').value.trim();
   const estado = document.getElementById('res-estado').value;
   const notas = document.getElementById('res-notas').value.trim();
-
   if (!nombre) { toast('Por favor ingresá el servicio.', 'error'); return; }
   if (!contacto) { toast('Por favor ingresá el contacto.', 'error'); return; }
-
   const { error } = await supabaseClient.from('reservas').insert({
     evento_id: eventoActual.id, nombre, contacto, telefono, email, estado, notas
   });
-
   if (error) { toast('Error al guardar.', 'error'); return; }
   document.getElementById('form-reserva').style.display = 'none';
   limpiarFormReserva();
@@ -294,10 +288,8 @@ async function eliminarReserva(resId) {
 async function cargarCobros() {
   const { data: cobros } = await supabaseClient
     .from('cobros').select('*').eq('evento_id', eventoActual.id).order('created_at');
-
   const { data: movimientos } = await supabaseClient
     .from('movimientos').select('*').eq('evento_id', eventoActual.id);
-
   actualizarMetricasFinancieras(movimientos, cobros);
 
   const lista = document.getElementById('cobro-list');
@@ -313,7 +305,6 @@ async function cargarCobros() {
     const esCobrado = c.estado === 'cobrado';
     const esPendiente = c.estado === 'pendiente';
     const estaVencido = esPendiente && c.fecha_vencimiento && c.fecha_vencimiento < hoy;
-
     return `
       <div class="cobro-card ${esCobrado ? 'cobrado' : ''} ${estaVencido ? 'vencido' : ''}">
         <div class="cobro-header">
@@ -347,14 +338,11 @@ async function guardarCobro() {
   const fecha_vencimiento = document.getElementById('cob-vencimiento').value || null;
   const estado = document.getElementById('cob-estado').value;
   const fecha_cobro = document.getElementById('cob-fecha-cobro').value || null;
-
   if (!concepto) { toast('Por favor ingresá el concepto.', 'error'); return; }
   if (!monto || monto <= 0) { toast('Por favor ingresá un monto válido.', 'error'); return; }
-
   const { error } = await supabaseClient.from('cobros').insert({
     evento_id: eventoActual.id, concepto, monto, fecha_vencimiento, estado, fecha_cobro
   });
-
   if (error) { toast('Error al guardar.', 'error'); return; }
   document.getElementById('form-cobro').style.display = 'none';
   limpiarFormCobro();
@@ -382,10 +370,8 @@ async function marcarCobrado(cobroId) {
 async function cargarMovimientos() {
   const { data: movimientos } = await supabaseClient
     .from('movimientos').select('*').eq('evento_id', eventoActual.id).order('fecha', { ascending: false });
-
   const { data: cobros } = await supabaseClient
     .from('cobros').select('*').eq('evento_id', eventoActual.id);
-
   actualizarMetricasFinancieras(movimientos, cobros);
 
   const movList = document.getElementById('movimiento-list');
@@ -393,7 +379,6 @@ async function cargarMovimientos() {
     movList.innerHTML = '<div class="event-empty">No hay movimientos todavía.</div>';
     return;
   }
-
   movList.innerHTML = movimientos.map(m => `
     <div class="movimiento-card">
       <div class="movimiento-row">
@@ -421,15 +406,12 @@ async function guardarMovimiento() {
   const tipo = document.getElementById('mov-tipo').value;
   const monto = parseFloat(document.getElementById('mov-monto').value) || 0;
   const fecha = document.getElementById('mov-fecha').value;
-
   if (!concepto) { toast('Por favor ingresá un concepto.', 'error'); return; }
   if (!monto || monto <= 0) { toast('Por favor ingresá un monto válido.', 'error'); return; }
   if (!fecha) { toast('Por favor seleccioná una fecha.', 'error'); return; }
-
   const { error } = await supabaseClient.from('movimientos').insert({
     evento_id: eventoActual.id, concepto, tipo, monto, fecha
   });
-
   if (error) { toast('Error al guardar.', 'error'); return; }
   document.getElementById('form-movimiento').style.display = 'none';
   limpiarFormMovimiento();
@@ -449,13 +431,11 @@ async function eliminarMovimiento(movId) {
 async function cargarPresupuestoFormal() {
   const { data: pres } = await supabaseClient
     .from('presupuestos').select('*').eq('evento_id', eventoActual.id).single();
-
   const contenedor = document.getElementById('pres-formal-preview');
   if (!pres) {
     contenedor.innerHTML = '<div class="event-empty">No hay presupuesto formal generado todavía.</div>';
     return;
   }
-
   const items = pres.items || [];
   const subtotal = items.reduce((a, i) => a + (i.cant || 1) * (i.precio || 0), 0);
   const descMonto = subtotal * ((pres.descuento || 0) / 100);
@@ -463,7 +443,6 @@ async function cargarPresupuestoFormal() {
   const iva = pres.incluye_iva ? subtotalConDesc * 0.21 : 0;
   const total = subtotalConDesc + iva;
   const fechaGuardado = new Date(pres.updated_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-
   contenedor.innerHTML = `
     <div class="pres-formal-card">
       <div class="pres-formal-header">
@@ -490,13 +469,11 @@ async function cargarPresupuestoFormal() {
 async function cargarNotas() {
   const { data: notas } = await supabaseClient
     .from('notas').select('*').eq('evento_id', eventoActual.id).order('created_at');
-
   const notaList = document.getElementById('nota-list');
   if (!notas || notas.length === 0) {
     notaList.innerHTML = '<div class="event-empty">No hay notas todavía.</div>';
     return;
   }
-
   notaList.innerHTML = notas.map(n => `
     <div class="nota-card">
       <div class="nota-header">
@@ -534,23 +511,16 @@ async function guardarNota() {
   const texto = document.getElementById('nota-texto-input').value.trim();
   const imagenInput = document.getElementById('nota-imagen-input');
   const audioInput = document.getElementById('nota-audio-input');
-
   if (!titulo) { toast('Por favor ingresá un título.', 'error'); return; }
-
-  let imagen = null;
-  let audio_url = null;
-  let audio_nombre = null;
-
+  let imagen = null, audio_url = null, audio_nombre = null;
   if (imagenInput.files[0]) imagen = await fileToBase64(imagenInput.files[0]);
   if (audioInput.files[0]) {
     audio_url = await fileToBase64(audioInput.files[0]);
     audio_nombre = audioInput.files[0].name;
   }
-
   const { error } = await supabaseClient.from('notas').insert({
     evento_id: eventoActual.id, titulo, texto, imagen, audio_url, audio_nombre
   });
-
   if (error) { toast('Error al guardar.', 'error'); return; }
   document.getElementById('form-nota').style.display = 'none';
   limpiarFormNota();
@@ -573,101 +543,6 @@ function verImagen(src) {
   document.body.appendChild(overlay);
 }
 
-// ── PDF resumen ───────────────────────────────────
-
-async function exportarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const evento = eventoActual;
-  const fecha = fechaLocal(evento.fecha);
-
-  const [{ data: movimientos }, { data: reservas }, { data: notas }, { data: reuniones }, { data: cobros }] = await Promise.all([
-    supabaseClient.from('movimientos').select('*').eq('evento_id', evento.id),
-    supabaseClient.from('reservas').select('*').eq('evento_id', evento.id),
-    supabaseClient.from('notas').select('titulo, texto').eq('evento_id', evento.id),
-    supabaseClient.from('reuniones').select('*').eq('evento_id', evento.id).order('fecha').order('hora'),
-    supabaseClient.from('cobros').select('*').eq('evento_id', evento.id)
-  ]);
-
-  const gastado = (movimientos || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
-  const cobrado = (cobros || []).filter(c => c.estado === 'cobrado').reduce((a, c) => a + c.monto, 0);
-  const saldo = (evento.presupuesto || 0) - gastado;
-
-  let y = 20;
-  const W = 210;
-  const nl = (n = 6) => { y += n; if (y > 270) { doc.addPage(); y = 20; } };
-
-  doc.setFillColor(127, 119, 221);
-  doc.rect(0, 0, W, 28, 'F');
-  doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
-  doc.text('DOT Eventos', 20, 14);
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-  doc.text('Resumen de evento', 20, 21);
-  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-  doc.text(evento.nombre, W - 20, 14, { align: 'right' });
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-  doc.text(fecha, W - 20, 21, { align: 'right' });
-  y = 38;
-
-  doc.setTextColor(0);
-  if (evento.contacto_nombre) {
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 100);
-    doc.text(`Contacto: ${evento.contacto_nombre}${evento.contacto_telefono ? ' · ' + evento.contacto_telefono : ''}`, 15, y); nl(10);
-  }
-
-  doc.setDrawColor(200); doc.line(15, y, W - 15, y); nl(8);
-  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-  doc.text('Resumen financiero', 15, y); nl(8);
-  doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-  doc.text('Presupuestado: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 15, y); nl();
-  doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 15, y); nl();
-  doc.text('Cobrado: $' + cobrado.toLocaleString('es-AR'), 15, y); nl();
-  doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 15, y); nl(10);
-
-  if (cobros?.length) {
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-    doc.text('Cobros del cliente', 15, y); nl(8);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-    cobros.forEach(c => {
-      doc.text(`${c.concepto}: $${c.monto.toLocaleString('es-AR')} — ${c.estado === 'cobrado' ? 'Cobrado' : 'Pendiente'}`, 20, y); nl();
-    });
-    nl(4);
-  }
-
-  if (reuniones?.length) {
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-    doc.text('Reuniones', 15, y); nl(8);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-    reuniones.forEach(r => { doc.text(`${r.fecha} ${r.hora.substring(0,5)} — ${r.titulo}`, 20, y); nl(); });
-    nl(4);
-  }
-
-  if (movimientos?.length) {
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-    doc.text('Movimientos', 15, y); nl(8);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-    movimientos.forEach(m => { doc.text(`${m.concepto} — ${m.tipo === 'egreso' ? '-' : '+'}$${m.monto.toLocaleString('es-AR')}`, 20, y); nl(); });
-    nl(4);
-  }
-
-  if (reservas?.length) {
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-    doc.text('Reservas', 15, y); nl(8);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-    reservas.forEach(r => { doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 20, y); nl(); });
-    nl(4);
-  }
-
-  if (notas?.length) {
-    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
-    doc.text('Notas', 15, y); nl(8);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
-    notas.forEach(n => { doc.text(`${n.titulo}${n.texto ? ': ' + n.texto.substring(0, 80) : ''}`, 20, y); nl(); });
-  }
-
-  doc.save(evento.nombre.replace(/ /g, '-') + '-resumen.pdf');
-  toast('PDF descargado');
-}
 // ── Tareas ────────────────────────────────────────
 
 async function cargarTareas() {
@@ -699,14 +574,21 @@ async function cargarTareas() {
       </div>`;
   }
 
-  lista.innerHTML = tareas.map(t => `
-    <div class="tarea-item ${t.completada ? 'completada' : ''}">
-      <button class="tarea-check ${t.completada ? 'checked' : ''}" onclick="toggleTarea('${t.id}', ${t.completada})">
-        ${t.completada ? '✓' : ''}
-      </button>
-      <span class="tarea-titulo">${t.titulo}</span>
-      <button class="btn-eliminar-nota" onclick="eliminarTarea('${t.id}')">✕</button>
-    </div>`).join('');
+  lista.innerHTML = tareas.map(t => {
+    const tieneVencimiento = t.fecha_vencimiento;
+    const fechaVenc = tieneVencimiento ? fechaLocal(t.fecha_vencimiento) : null;
+    return `
+      <div class="tarea-item ${t.completada ? 'completada' : ''}">
+        <button class="tarea-check ${t.completada ? 'checked' : ''}" onclick="toggleTarea('${t.id}', ${t.completada})">
+          ${t.completada ? '✓' : ''}
+        </button>
+        <div style="flex:1;">
+          <span class="tarea-titulo">${t.titulo}</span>
+          ${fechaVenc ? `<div style="font-size:11px;color:#bbb;margin-top:2px;">Vence: ${fechaVenc}</div>` : ''}
+        </div>
+        <button class="btn-eliminar-nota" onclick="eliminarTarea('${t.id}')">✕</button>
+      </div>`;
+  }).join('');
 }
 
 async function toggleTarea(tareaId, completada) {
@@ -720,33 +602,29 @@ async function eliminarTarea(tareaId) {
   await cargarTareas();
 }
 
-// ── Chat / Comentarios ────────────────────────────
+// ── Chat ──────────────────────────────────────────
 
 async function cargarChat() {
   const { data: comentarios } = await supabaseClient
     .from('comentarios').select('*').eq('evento_id', eventoActual.id).order('created_at');
-
   const mensajes = document.getElementById('chat-mensajes');
   if (!comentarios || comentarios.length === 0) {
     mensajes.innerHTML = '<div class="event-empty">No hay comentarios todavía.</div>';
     return;
   }
-
   const { data: { session } } = await supabaseClient.auth.getSession();
   const miEmail = session?.user?.email;
-
   mensajes.innerHTML = comentarios.map(c => {
     const esMio = c.autor_email === miEmail;
     const hora = new Date(c.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    const fecha = new Date(c.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+    const fechaMsg = new Date(c.created_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
     return `
       <div class="chat-msg ${esMio ? 'mio' : 'otro'}">
         ${!esMio ? `<div class="chat-autor">${c.autor_nombre}</div>` : ''}
         <div class="chat-burbuja">${c.mensaje}</div>
-        <div class="chat-hora">${fecha} ${hora}</div>
+        <div class="chat-hora">${fechaMsg} ${hora}</div>
       </div>`;
   }).join('');
-
   mensajes.scrollTop = mensajes.scrollHeight;
 }
 
@@ -754,18 +632,144 @@ async function enviarMensaje() {
   const input = document.getElementById('chat-input');
   const mensaje = input.value.trim();
   if (!mensaje) return;
-
   const { data: { session } } = await supabaseClient.auth.getSession();
   const nombre = session?.user?.user_metadata?.full_name || session?.user?.email || 'Usuario';
-
   const { error } = await supabaseClient.from('comentarios').insert({
     evento_id: eventoActual.id,
     autor_nombre: nombre,
     autor_email: session?.user?.email,
     mensaje
   });
-
   if (error) { toast('Error al enviar.', 'error'); return; }
   input.value = '';
   await cargarChat();
+}
+
+// ── PDF resumen ───────────────────────────────────
+
+async function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const evento = eventoActual;
+  const fecha = fechaLocal(evento.fecha);
+  const W = 210;
+
+  const [{ data: movimientos }, { data: reservas }, { data: notas }, { data: reuniones }, { data: cobros }, { data: tareas }] = await Promise.all([
+    supabaseClient.from('movimientos').select('*').eq('evento_id', evento.id),
+    supabaseClient.from('reservas').select('*').eq('evento_id', evento.id),
+    supabaseClient.from('notas').select('titulo, texto').eq('evento_id', evento.id),
+    supabaseClient.from('reuniones').select('*').eq('evento_id', evento.id).order('fecha').order('hora'),
+    supabaseClient.from('cobros').select('*').eq('evento_id', evento.id),
+    supabaseClient.from('tareas').select('*').eq('evento_id', evento.id)
+  ]);
+
+  const gastado = (movimientos || []).filter(m => m.tipo === 'egreso').reduce((a, m) => a + m.monto, 0);
+  const cobrado = (cobros || []).filter(c => c.estado === 'cobrado').reduce((a, c) => a + c.monto, 0);
+  const saldo = (evento.presupuesto || 0) - gastado;
+
+  let y = 20;
+  const nl = (n = 6) => { y += n; if (y > 270) { doc.addPage(); y = 20; } };
+
+  // Header
+  doc.setFillColor(127, 119, 221);
+  doc.rect(0, 0, W, 28, 'F');
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+  doc.text('DOT Eventos', 20, 14);
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text('Resumen de evento', 20, 21);
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text(evento.nombre, W - 20, 14, { align: 'right' });
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text(fecha, W - 20, 21, { align: 'right' });
+  y = 38;
+
+  doc.setTextColor(0);
+  if (evento.contacto_nombre) {
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 100);
+    doc.text(`Contacto: ${evento.contacto_nombre}${evento.contacto_telefono ? ' · ' + evento.contacto_telefono : ''}`, 15, y); nl(10);
+  }
+
+  // Finanzas
+  doc.setDrawColor(200); doc.line(15, y, W - 15, y); nl(8);
+  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+  doc.text('Resumen financiero', 15, y); nl(8);
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+  doc.text('Presupuestado: $' + (evento.presupuesto || 0).toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Gastado: $' + gastado.toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Cobrado: $' + cobrado.toLocaleString('es-AR'), 15, y); nl();
+  doc.text('Saldo: $' + saldo.toLocaleString('es-AR'), 15, y); nl(10);
+
+  // Cobros
+  if (cobros?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Cobros del cliente', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    cobros.forEach(c => {
+      doc.text(`${c.concepto}: $${c.monto.toLocaleString('es-AR')} — ${c.estado === 'cobrado' ? 'Cobrado' : 'Pendiente'}`, 20, y); nl();
+    });
+    nl(4);
+  }
+
+  // Reuniones
+  if (reuniones?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Reuniones', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    reuniones.forEach(r => { doc.text(`${r.fecha} ${r.hora.substring(0,5)} — ${r.titulo}`, 20, y); nl(); });
+    nl(4);
+  }
+
+  // Movimientos
+  if (movimientos?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Movimientos', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    movimientos.forEach(m => { doc.text(`${m.concepto} — ${m.tipo === 'egreso' ? '-' : '+'}$${m.monto.toLocaleString('es-AR')}`, 20, y); nl(); });
+    nl(4);
+  }
+
+  // Reservas
+  if (reservas?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Reservas', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    reservas.forEach(r => { doc.text(`${r.nombre} — ${r.contacto}${r.telefono ? ' · ' + r.telefono : ''}`, 20, y); nl(); });
+    nl(4);
+  }
+
+  // Tareas
+  if (tareas?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Tareas', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    tareas.forEach(t => {
+      doc.text(`${t.completada ? '✓' : '○'} ${t.titulo}${t.fecha_vencimiento ? ' (vence: ' + t.fecha_vencimiento + ')' : ''}`, 20, y); nl();
+    });
+    nl(4);
+  }
+
+  // Notas — FIX: texto completo con saltos de línea
+  if (notas?.length) {
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(30, 30, 46);
+    doc.text('Notas', 15, y); nl(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 80);
+    notas.forEach(n => {
+      // Título de la nota
+      doc.setFont('helvetica', 'bold');
+      doc.text(n.titulo, 20, y); nl(6);
+      // Texto completo con wrapping automático
+      if (n.texto) {
+        doc.setFont('helvetica', 'normal');
+        const lineas = doc.splitTextToSize(n.texto, W - 40);
+        lineas.forEach(linea => {
+          doc.text(linea, 20, y);
+          nl(5);
+        });
+      }
+      nl(3);
+    });
+  }
+
+  doc.save(evento.nombre.replace(/ /g, '-') + '-resumen.pdf');
+  toast('PDF descargado');
 }

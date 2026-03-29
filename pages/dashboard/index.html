@@ -68,24 +68,13 @@
       </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="graficos-wrapper">
-      <div class="grafico-card">
-        <div class="grafico-titulo">Eventos por mes</div>
-        <canvas id="chart-eventos" height="120"></canvas>
-      </div>
-      <div class="grafico-card">
-        <div class="grafico-titulo">Finanzas</div>
-        <canvas id="chart-finanzas" height="120"></canvas>
-      </div>
-    </div>
-
-    <!-- Búsqueda y filtros -->
+    <!-- Búsqueda -->
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
       <input type="text" id="search-input" class="search-bar" placeholder="Buscar por nombre, lugar o contacto..." />
     </div>
 
+    <!-- Filtros estado -->
     <div class="filtros">
       <button class="filtro-btn active" data-filtro="todos">Todos</button>
       <button class="filtro-btn" data-filtro="confirmado">Confirmados</button>
@@ -93,15 +82,30 @@
       <button class="filtro-btn" data-filtro="borrador">Borradores</button>
     </div>
 
+    <!-- Filtros vista -->
     <div class="filtros" style="margin-top:-0.5rem;">
       <button class="filtro-btn active" data-vista="proximos">Próximos</button>
       <button class="filtro-btn" data-vista="pasados">Historial</button>
       <button class="filtro-btn" data-vista="todos">Todos</button>
     </div>
 
+    <!-- Lista de eventos -->
     <div class="db-section-title" id="lista-titulo">Próximos eventos</div>
     <div class="event-list" id="event-list">
       <div class="event-empty">Cargando eventos...</div>
+    </div>
+
+    <!-- Gráficos AL FINAL -->
+    <div class="db-section-title" style="margin-top:2rem;">Estadísticas</div>
+    <div class="graficos-wrapper">
+      <div class="grafico-card">
+        <div class="grafico-titulo">Eventos por mes</div>
+        <canvas id="chart-eventos" height="120"></canvas>
+      </div>
+      <div class="grafico-card">
+        <div class="grafico-titulo">Cobros vs gastos</div>
+        <canvas id="chart-finanzas" height="120"></canvas>
+      </div>
     </div>
 
   </div>
